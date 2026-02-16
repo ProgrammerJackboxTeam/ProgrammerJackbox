@@ -9,10 +9,22 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 
-const rooms = {}; // { ROOMCODE: { host: socket.id, players: [] } }
+const rooms = {}; // { ROOMCODE: { host: socket.id, players: [], selectedGame: null } }
 
 function generateRoomCode() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+function emitRoomUpdate(roomCode) {
+    const room = rooms[roomCode];
+    if (!room) {
+        return;
+    }
+
+    io.to(roomCode).emit("update-players", {
+        players: room.players,
+        hostId: room.host
+    });
 }
 
 io.on("connection", socket => {
@@ -22,12 +34,13 @@ io.on("connection", socket => {
         const roomCode = generateRoomCode();
         rooms[roomCode] = {
             host: socket.id,
-            players: [{ id: socket.id, name }]
+            players: [{ id: socket.id, name }],
+            selectedGame: null
         };
 
         socket.join(roomCode);
         socket.emit("room-created", roomCode);
-        io.to(roomCode).emit("update-players", rooms[roomCode].players);
+        emitRoomUpdate(roomCode);
     });
 
     socket.on("join-room", ({ roomCode, name }) => {
@@ -39,7 +52,22 @@ io.on("connection", socket => {
         rooms[roomCode].players.push({ id: socket.id, name });
         socket.join(roomCode);
 
-        io.to(roomCode).emit("update-players", rooms[roomCode].players);
+        emitRoomUpdate(roomCode);
+
+        if (rooms[roomCode].selectedGame) {
+            socket.emit("gamemode-selected", rooms[roomCode].selectedGame);
+        }
+    });
+
+    socket.on("select-gamemode", ({ roomCode, gameMode }) => {
+        const room = rooms[roomCode];
+
+        if (!room || room.host !== socket.id) {
+            return;
+        }
+
+        room.selectedGame = gameMode;
+        io.to(roomCode).emit("gamemode-selected", gameMode);
     });
 
     socket.on("disconnect", () => {
@@ -53,7 +81,11 @@ io.on("connection", socket => {
                 if (room.players.length === 0) {
                     delete rooms[code];
                 } else {
-                    io.to(code).emit("update-players", room.players);
+                    if (room.host === socket.id) {
+                        room.host = room.players[0].id;
+                    }
+
+                    emitRoomUpdate(code);
                 }
             }
         }

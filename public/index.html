@@ -7,6 +7,7 @@
         .hidden { display: none; }
         table { border-collapse: collapse; margin-top: 10px; }
         td, th { border: 1px solid #ccc; padding: 6px 12px; }
+        #gameSelectArea { margin-top: 12px; }
     </style>
 </head>
 <body>
@@ -37,6 +38,15 @@
     <table id="playerTable">
         <tr><th>Name</th></tr>
     </table>
+
+    <button id="selectGameButton" class="hidden" onclick="showGameSelect()">Select a Game</button>
+    <div id="gameSelectArea" class="hidden">
+        <label for="gameSelect">Game mode:</label>
+        <select id="gameSelect"></select>
+        <button onclick="confirmGameSelect()">Confirm</button>
+        <p id="gameDetails"></p>
+    </div>
+    <p id="selectedGameDisplay" class="hidden"></p>
 
     <button onclick="back()">Close Lobby</button>
 </div>

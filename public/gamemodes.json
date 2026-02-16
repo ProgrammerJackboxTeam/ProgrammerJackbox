@@ -1,0 +1,12 @@
+[
+    {
+        "name": "LogicCAH",
+        "description": "Logic-based card prompts with a twist.",
+        "minPlayers": 4
+    },
+    {
+        "name": "programmerProphunt",
+        "description": "Hide-and-seek style game for programmers.",
+        "minPlayers": 4
+    }
+]
