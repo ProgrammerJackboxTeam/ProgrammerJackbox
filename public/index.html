@@ -1,44 +1,329 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simple Lobby</title>
+    <title>Programmer Jackbox</title>
     <style>
-        body { font-family: Arial; padding: 20px; }
-        .hidden { display: none; }
-        table { border-collapse: collapse; margin-top: 10px; }
-        td, th { border: 1px solid #ccc; padding: 6px 12px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1, h2, h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        input, select, button, textarea {
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            width: 100%;
+            font-family: Arial, sans-serif;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #764ba2;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        td, th {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+        }
+
+        .room-code {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+
+        .game-settings {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .status {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .answer-option {
+            background: #f0f0f0;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .answer-option:hover {
+            background: #e0e0e0;
+            border-color: #667eea;
+        }
+
+        .answer-option.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .button-group button {
+            flex: 1;
+        }
+
+        .scores {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
     </style>
 </head>
 <body>
 
-<h2>Enter Your Name</h2>
-<input id="nameInput" type="text" placeholder="Your name">
-<button onclick="submitName()">Continue</button>
+<div class="container">
+    <!-- Name Entry -->
+    <div id="nameEntry">
+        <h1>🎮 Programmer Jackbox</h1>
+        <p>Enter your name to continue:</p>
+        <input id="nameInput" type="text" placeholder="Your name">
+        <button onclick="submitName()">Continue</button>
+    </div>
 
-<div id="menu" class="hidden">
-    <h2>Main Menu</h2>
-    <button onclick="hostLobby()">Host a Lobby</button>
-    <button onclick="showJoin()">Join a Lobby</button>
-</div>
+    <!-- Main Menu -->
+    <div id="mainMenu" class="hidden">
+        <h2>Main Menu</h2>
+        <button onclick="hostLobby()">Host a Game</button>
+        <button onclick="showJoin()">Join a Game</button>
+    </div>
 
-<div id="joinSection" class="hidden">
-    <h3>Join Lobby</h3>
-    <input id="joinCode" type="text" placeholder="Room code">
-    <button onclick="joinLobby()">Join</button>
-    <button onclick="back()">Back</button>
-</div>
+    <!-- Join Section -->
+    <div id="joinSection" class="hidden">
+        <h3>Join Game</h3>
+        <input id="joinCode" type="text" placeholder="Room code" maxlength="6">
+        <button onclick="joinLobby()">Join</button>
+        <button onclick="back()">Back</button>
+    </div>
 
-<div id="hostSection" class="hidden">
-    <h3>Hosting Lobby</h3>
-    <p>Your room code:</p>
-    <h2 id="roomKey"></h2>
+    <!-- Lobby (Host) -->
+    <div id="hostLobby" class="hidden">
+        <h2>Hosting Game</h2>
+        <p>Share this code with others:</p>
+        <div class="room-code" id="roomKey"></div>
 
-    <h3>Players:</h3>
-    <table id="playerTable">
-        <tr><th>Name</th></tr>
-    </table>
+        <h3>Players in lobby:</h3>
+        <table id="playerTable">
+            <tr><th>Name</th></tr>
+        </table>
 
-    <button onclick="back()">Close Lobby</button>
+        <div id="gameSettings" class="hidden game-settings">
+            <h3>Game Settings</h3>
+            <label>Game Mode:</label>
+            <select id="gameModeSelect" onchange="updateSettings()">
+                <option value="LogicCAH">LogicCAH - Logic Cards</option>
+                <option value="ProgrammerProphunt">ProgrammerProphunt - Code Hunt</option>
+            </select>
+
+            <label>Number of Rounds:</label>
+            <select id="numRounds">
+                <option value="1">1 Round</option>
+                <option value="2" selected>2 Rounds</option>
+                <option value="3">3 Rounds</option>
+                <option value="5">5 Rounds</option>
+            </select>
+
+            <label>Time Limit (seconds):</label>
+            <input type="number" id="timeLimit" value="30" min="10" max="300">
+
+            <div id="logiccahSettings">
+                <label>Number of Prompts:</label>
+                <input type="number" id="numPrompts" value="2" min="1" max="5">
+            </div>
+
+            <div id="prophuntSettings" class="hidden">
+                <label>Code Complexity:</label>
+                <select id="complexity">
+                    <option value="easy">Easy</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </div>
+
+            <button onclick="startGame()" disabled id="startGameBtn">Start Game (Need 2+ players)</button>
+        </div>
+
+        <div class="button-group">
+            <button onclick="toggleSettings()">Game Settings</button>
+            <button onclick="back()">Close Lobby</button>
+        </div>
+    </div>
+
+    <!-- Lobby (Joined) -->
+    <div id="joinedLobby" class="hidden">
+        <h2>Waiting for Host to Start</h2>
+        <p>Players in lobby:</p>
+        <table id="joinedPlayerTable">
+            <tr><th>Name</th></tr>
+        </table>
+        <button onclick="back()">Leave</button>
+    </div>
+
+    <!-- LogicCAH Game -->
+    <div id="logiccahGame" class="hidden">
+        <h2>LogicCAH - Answer the Logic Prompts</h2>
+        <div class="status" id="gameStatus"></div>
+
+        <div id="answerPhase" class="hidden">
+            <h3>Answer the prompts</h3>
+            <div id="promptsContainer"></div>
+            <button onclick="submitLogiccahAnswers()">Submit Answers</button>
+        </div>
+
+        <div id="deciderPhase" class="hidden">
+            <h3>You are the Decider!</h3>
+            <p>Choose which answers make the most sense:</p>
+            <div id="answersContainer"></div>
+        </div>
+
+        <div id="waitingPhase" class="hidden">
+            <p>⏳ Waiting for other players...</p>
+        </div>
+
+        <div id="resultsPhase" class="hidden">
+            <h3>Round Results</h3>
+            <div id="resultsDisplay"></div>
+        </div>
+
+        <div id="gameOverPhase" class="hidden">
+            <h3>🎉 Game Over!</h3>
+            <div id="finalScores" class="scores"></div>
+            <button onclick="back()">Back to Menu</button>
+        </div>
+    </div>
+
+    <!-- ProgrammerProphunt Game -->
+    <div id="prophuntGame" class="hidden">
+        <h2>ProgrammerProphunt - Hide Your Code</h2>
+        <div class="status" id="prophuntStatus"></div>
+
+        <div id="hiderPhase" class="hidden">
+            <h3>👻 You are a Hider!</h3>
+            <p>Add a line of code to the block:</p>
+            <textarea id="codeInput" placeholder="Enter a line of code"></textarea>
+            <button onclick="submitHiderLine()">Submit</button>
+        </div>
+
+        <div id="finderPhase" class="hidden">
+            <h3>🔍 You are a Finder!</h3>
+            <p>Which line looks suspicious?</p>
+            <div class="code-block" id="codeDisplay"></div>
+            <div id="lineSelectContainer"></div>
+            <button onclick="submitFinderSelection()">Submit Selection</button>
+        </div>
+
+        <div id="prophuntWaitingPhase" class="hidden">
+            <p>⏳ Waiting for other players...</p>
+        </div>
+
+        <div id="prophuntResultsPhase" class="hidden">
+            <h3>Round Results</h3>
+            <div id="prophuntResultsDisplay"></div>
+        </div>
+
+        <div id="prophuntGameOverPhase" class="hidden">
+            <h3>🎉 Game Over!</h3>
+            <div id="prophuntFinalScores" class="scores"></div>
+            <button onclick="back()">Back to Menu</button>
+        </div>
+    </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
