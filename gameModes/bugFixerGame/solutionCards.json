@@ -1,0 +1,27 @@
+[
+    {
+        "response": "Add even more catch statements all over the place."
+    },
+    {
+        "response": "Add special character handling to any string inputs."
+    },
+    {
+        "response": "CTRL+F for any '/' characters and replace them with '\/'."
+    },
+    {
+        "response": "CTRL+F for any division operations and add a check to make sure the denominator is not zero."
+    },
+    {
+        "response": "Switch compilers"
+    },
+    {
+        "response": "Scrap the entire function."
+    },
+    {
+        "response": "Update the README."
+    },
+    {
+        "response": "Add a check to make sure everything zeroes out."
+    }
+
+]

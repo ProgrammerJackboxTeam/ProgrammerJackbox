@@ -1,5 +1,10 @@
 [
     {
+        "name": "bugFixerGame",
+        "description": "Pitch the best bug-fix strategy card to the decider.",
+        "minPlayers": 4
+    },
+    {
         "name": "LogicCAH",
         "description": "Logic-based card prompts with a twist.",
         "minPlayers": 4
