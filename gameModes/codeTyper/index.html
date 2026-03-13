@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Code Typer</title>
+    <link rel="stylesheet" href="/codeTyper/codeTyper.css">
+</head>
+<body>
+
+<h2>Code Typer</h2>
+
+<div id="game-screen">
+    <p>Type the code snippet as fast and accurately as you can. Timer starts on your first keystroke.</p>
+
+    <div id="code-display"></div>
+
+    <div id="stats">
+        <span>WPM: <b id="stat-wpm">0</b></span>
+        <span>Accuracy: <b id="stat-acc">100%</b></span>
+        <span>Errors: <b id="stat-err">0</b></span>
+        <span>Time: <b id="stat-time">0s</b></span>
+    </div>
+
+    <textarea
+        id="typing-input"
+        placeholder="Start typing here..."
+        spellcheck="false"
+        autocorrect="off"
+        autocomplete="off"
+        autocapitalize="off">
+    </textarea>
+
+    <div>
+        <button onclick="newGame()">New Snippet</button>
+        <a href="/"><button type="button">Main Menu</button></a>
+    </div>
+</div>
+
+<div id="result-screen" class="hidden">
+    <h3>Round Complete!</h3>
+    <div id="result-box">
+        <p>WPM: <b id="res-wpm"></b></p>
+        <p>Accuracy: <b id="res-acc"></b></p>
+        <p>Errors: <b id="res-err"></b></p>
+        <p>Time: <b id="res-time"></b></p>
+    </div>
+
+    <div id="lang-guess-section">
+        <p><b>Bonus:</b> What programming language was that?</p>
+        <input type="text" id="lang-guess-input" placeholder="e.g. Python">
+        <button onclick="submitGuess()">Guess</button>
+        <p id="guess-result"></p>
+    </div>
+
+    <div>
+        <button onclick="newGame()">Play Again</button>
+        <a href="/"><button type="button">Main Menu</button></a>
+    </div>
+</div>
+
+<script src="codeTyper.js"></script>
+</body>
+</html>

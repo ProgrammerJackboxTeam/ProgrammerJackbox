@@ -8,6 +8,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static("public"));
+app.use("/codeTyper", express.static("gameModes/codeTyper"));
 
 const rooms = {}; // { ROOMCODE: { host: socket.id, players: [] } }
 
