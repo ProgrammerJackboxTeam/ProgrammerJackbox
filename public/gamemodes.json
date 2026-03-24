@@ -2,7 +2,7 @@
     {
         "name": "bugFixerGame",
         "description": "Pitch the best bug-fix strategy card to the decider.",
-        "minPlayers": 4
+        "minPlayers": 3
     },
     {
         "name": "LogicCAH",

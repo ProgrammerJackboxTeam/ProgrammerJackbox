@@ -47,6 +47,38 @@
         <p id="gameDetails"></p>
     </div>
     <p id="selectedGameDisplay" class="hidden"></p>
+    <button id="terminateGameButton" class="hidden" onclick="terminateCurrentGame()">Terminate Current Game</button>
+
+    <div id="bugFixerArea" class="hidden">
+        <h3>Bug Fixer</h3>
+        <p id="bugFixerStatus">Waiting to start.</p>
+        <label for="bugFixerPointsToWinInput">Points to win:</label>
+        <input id="bugFixerPointsToWinInput" type="number" min="1" value="5">
+        <button id="startBugFixerButton" class="hidden" onclick="startBugFixerGame()">Start Bug Fixer</button>
+
+        <p><strong>Decider:</strong> <span id="bugFixerDecider">-</span></p>
+        <p><strong>Prompt:</strong> <span id="bugFixerPrompt">-</span></p>
+        <p><strong>Responses Required:</strong> <span id="bugFixerResponsesRequired">0</span></p>
+
+        <div id="bugFixerHandArea">
+            <h4>Your Hand</h4>
+            <div id="bugFixerHand"></div>
+            <h4>Selected In Order</h4>
+            <div id="bugFixerSelectedOrder"></div>
+            <button id="bugFixerSubmitButton" class="hidden" onclick="submitBugFixerCards()">Submit Selected Card(s)</button>
+        </div>
+
+        <div id="bugFixerJudgeArea" class="hidden">
+            <h4>Choose a Winner</h4>
+            <div id="bugFixerSubmissions"></div>
+        </div>
+
+        <h4>Scoreboard</h4>
+        <ul id="bugFixerScoreboard"></ul>
+
+        <h4>Last Reveal</h4>
+        <ul id="bugFixerRevealList"></ul>
+    </div>
 
     <button onclick="back()">Close Lobby</button>
 </div>
