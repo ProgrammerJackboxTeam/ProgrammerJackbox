@@ -74,3 +74,61 @@ button:hover { background: #2589c3; }
 #guess-result { margin-top: 8px; font-weight: bold; font-size: 15px; }
 
 a button { margin-top: 10px; }
+
+/* ── Keyboard ─────────────────────────────────── */
+#keyboard {
+    margin-top: 22px;
+    user-select: none;
+}
+
+.kb-row {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 5px;
+    justify-content: center;
+}
+
+.key {
+    background: #2e2e2e;
+    border: 1px solid #444;
+    border-bottom: 3px solid #222;
+    border-radius: 5px;
+    color: #aaa;
+    font-family: monospace;
+    font-size: 11px;
+    min-width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    transition: background 0.05s, transform 0.05s, color 0.05s;
+    padding: 0 5px;
+    box-sizing: border-box;
+}
+
+.key-wide      { min-width: 56px; }
+.key-extrawide { min-width: 72px; }
+.key-space     { min-width: 280px; }
+
+/* Key is physically pressed */
+.key.pressed {
+    background: #1d6fa4;
+    border-color: #1a5f8e;
+    border-bottom-width: 1px;
+    color: #fff;
+    transform: translateY(2px);
+}
+
+/* Next character to type */
+.key.next-key {
+    background: #3a3a3a;
+    border-color: #6bcf6b;
+    color: #6bcf6b;
+}
+
+/* Both at once (pressing the right key) */
+.key.pressed.next-key {
+    background: #1d6fa4;
+    color: #fff;
+}
