@@ -9,6 +9,7 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 app.use("/codeTyper", express.static("gameModes/codeTyper"));
+app.use("/flexboxSpider", express.static("gameModes/flexboxSpider"));
 
 const rooms = {}; // { ROOMCODE: { host: socket.id, players: [] } }
 
