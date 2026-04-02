@@ -3,10 +3,12 @@ body {
     background: #1a1a1a;
     color: #ccc;
     padding: 20px;
-    max-width: 820px;
+    max-width: 900px;
+    margin: 0 auto;
 }
-h2 { color: #fff; margin-bottom: 4px; }
+h2 { color: #fff; margin-bottom: 4px; text-align: center; }
 .hidden { display: none; }
+#game-screen p { text-align: center; }
 
 #code-display {
     background: #2a2a2a;
@@ -25,23 +27,13 @@ h2 { color: #fff; margin-bottom: 4px; }
 #stats {
     font-size: 15px;
     margin-bottom: 8px;
+    text-align: center;
 }
 #stats span { margin-right: 22px; }
 
-#typing-input {
-    width: 100%;
-    height: 110px;
-    font-family: monospace;
-    font-size: 13px;
-    background: #2a2a2a;
-    color: #ccc;
-    border: 1px solid #555;
-    padding: 8px;
-    box-sizing: border-box;
-    resize: none;
-    outline: none;
+.buttons-row {
+    text-align: center;
 }
-#typing-input:focus { border-color: #888; }
 
 button {
     background: #1d6fa4;
@@ -55,15 +47,82 @@ button {
 }
 button:hover { background: #2589c3; }
 
-#result-box {
-    background: #2a2a2a;
-    border: 1px solid #444;
-    padding: 16px;
-    margin-top: 14px;
-}
-#result-box p { margin: 6px 0; font-size: 16px; }
+#result-screen { text-align: left; }
 
-#lang-guess-section { margin-top: 14px; }
+/* ── Top: big stats + chart side-by-side ── */
+#result-top {
+    display: flex;
+    gap: 24px;
+    align-items: stretch;
+    margin-bottom: 18px;
+}
+
+#result-left {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    min-width: 120px;
+}
+
+.big-stat {
+    display: flex;
+    flex-direction: column;
+}
+.big-stat-label {
+    font-size: 14px;
+    color: #646669;
+    line-height: 1;
+}
+.big-stat-value {
+    font-size: 52px;
+    font-weight: 700;
+    color: #4db8ff;
+    line-height: 1.1;
+}
+
+#result-chart-wrap {
+    flex: 1 1 0;
+    min-height: 160px;
+    position: relative;
+}
+#result-chart {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* ── Bottom stats row ── */
+#result-stats-row {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #333;
+    padding-top: 14px;
+    margin-bottom: 18px;
+}
+
+.rs-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+}
+.rs-label {
+    font-size: 11px;
+    color: #646669;
+    margin-bottom: 2px;
+}
+.rs-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #ccc;
+}
+.rs-accent {
+    color: #4db8ff;
+}
+
+#lang-guess-section { margin-top: 14px; text-align: center; }
 #lang-guess-input {
     font-size: 14px;
     padding: 4px 8px;

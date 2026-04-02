@@ -20,16 +20,7 @@
         <span>Time: <b id="stat-time">0s</b></span>
     </div>
 
-    <textarea
-        id="typing-input"
-        placeholder="Start typing here..."
-        spellcheck="false"
-        autocorrect="off"
-        autocomplete="off"
-        autocapitalize="off">
-    </textarea>
-
-    <div>
+    <div class="buttons-row">
         <button onclick="newGame()">New Snippet</button>
         <a href="/"><button type="button">Main Menu</button></a>
     </div>
@@ -103,14 +94,49 @@
 </div>
 
 <div id="result-screen" class="hidden">
-    <h3>Round Complete!</h3>
-    <div id="result-box">
-        <p>WPM: <b id="res-wpm"></b></p>
-        <p>Accuracy: <b id="res-acc"></b></p>
-        <p>Errors: <b id="res-err"></b></p>
-        <p>Time: <b id="res-time"></b></p>
+
+    <!-- ── Top: big stats + chart ── -->
+    <div id="result-top">
+        <div id="result-left">
+            <div class="big-stat">
+                <span class="big-stat-label">wpm</span>
+                <span class="big-stat-value" id="res-wpm">0</span>
+            </div>
+            <div class="big-stat">
+                <span class="big-stat-label">acc</span>
+                <span class="big-stat-value" id="res-acc">0%</span>
+            </div>
+        </div>
+        <div id="result-chart-wrap">
+            <canvas id="result-chart"></canvas>
+        </div>
     </div>
 
+    <!-- ── Bottom stats row ── -->
+    <div id="result-stats-row">
+        <div class="rs-col">
+            <span class="rs-label">test type</span>
+            <span class="rs-value rs-accent" id="res-lang">—</span>
+        </div>
+        <div class="rs-col">
+            <span class="rs-label">raw</span>
+            <span class="rs-value" id="res-raw">0</span>
+        </div>
+        <div class="rs-col">
+            <span class="rs-label">characters</span>
+            <span class="rs-value" id="res-chars">0/0/0/0</span>
+        </div>
+        <div class="rs-col">
+            <span class="rs-label">consistency</span>
+            <span class="rs-value" id="res-consistency">0%</span>
+        </div>
+        <div class="rs-col">
+            <span class="rs-label">time</span>
+            <span class="rs-value" id="res-time">0s</span>
+        </div>
+    </div>
+
+    <!-- ── Language guess ── -->
     <div id="lang-guess-section">
         <p><b>Bonus:</b> What programming language was that?</p>
         <input type="text" id="lang-guess-input" placeholder="e.g. Python">
@@ -118,7 +144,7 @@
         <p id="guess-result"></p>
     </div>
 
-    <div>
+    <div class="buttons-row">
         <button onclick="newGame()">Play Again</button>
         <a href="/"><button type="button">Main Menu</button></a>
     </div>
