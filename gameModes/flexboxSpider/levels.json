@@ -70,7 +70,7 @@
     "property": "order",
     "answer": "-1",
     "startCss": { "flexDirection": "row" },
-    "target": "frog"
+    "target": "spider"
   },
   {
     "level": 10,
@@ -79,6 +79,6 @@
     "property": "align-self",
     "answer": "flex-start",
     "startCss": { "flexDirection": "row", "alignItems": "flex-end" },
-    "target": "frog"
+    "target": "spider"
   }
 ]

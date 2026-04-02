@@ -8,12 +8,12 @@ fetch("/flexboxSpider/levels.json")
         loadLevel(0);
     });
 
-const pond      = document.getElementById("pond");
-const frogEl    = document.getElementById("frog");
-const lilypadEl = document.getElementById("lilypad");
-const cssInput  = document.getElementById("css-input");
-const feedbackEl = document.getElementById("feedback");
-const nextBtn   = document.getElementById("next-btn");
+const webContainer = document.getElementById("web-container");
+const spiderEl     = document.getElementById("spider");
+const targetWebEl  = document.getElementById("target-web");
+const cssInput     = document.getElementById("css-input");
+const feedbackEl   = document.getElementById("feedback");
+const nextBtn      = document.getElementById("next-btn");
 
 function loadLevel(index) {
     currentLevelIndex = index;
@@ -26,24 +26,24 @@ function loadLevel(index) {
 
     // Update CSS selector label based on target
     const selectorLabel = document.getElementById("css-selector-label");
-    selectorLabel.textContent = lvl.target === "frog" ? "#frog {" : "#pond {";
+    selectorLabel.textContent = lvl.target === "spider" ? "#spider {" : "#web-container {";
 
-    // Reset pond styles
-    pond.style.cssText = "";
-    frogEl.style.cssText = "";
-    lilypadEl.style.cssText = "";
+    // Reset styles
+    webContainer.style.cssText = "";
+    spiderEl.style.cssText = "";
+    targetWebEl.style.cssText = "";
 
-    // Apply starting CSS to pond
+    // Apply starting CSS to the web container
     if (lvl.startCss) {
         for (const [prop, val] of Object.entries(lvl.startCss)) {
-            pond.style[prop] = val;
+            webContainer.style[prop] = val;
         }
     }
 
-    // Special layout for wrap level: frog needs explicit width to force wrap
+    // Special layout for wrap level: elements need explicit width to force wrap
     if (lvl.answer === "wrap") {
-        frogEl.style.minWidth = "55%";
-        lilypadEl.style.minWidth = "55%";
+        spiderEl.style.minWidth = "55%";
+        targetWebEl.style.minWidth = "55%";
     }
 
     // Reset input & feedback
@@ -71,7 +71,7 @@ function applyCSS() {
     }
 
     // Apply to the correct target element
-    const target = lvl.target === "frog" ? frogEl : pond;
+    const target = lvl.target === "spider" ? spiderEl : webContainer;
     for (const [prop, val] of Object.entries(parsed)) {
         target.style[prop] = val;
     }

@@ -4,15 +4,17 @@ body {
     color: #ccc;
     padding: 20px;
     max-width: 820px;
+    margin: 0 auto;
 }
 
-h2 { color: #fff; margin-bottom: 4px; }
-h3 { color: #fff; }
+h2 { color: #fff; margin-bottom: 4px; text-align: center; }
+h3 { color: #fff; text-align: center; }
 .hidden { display: none; }
 
 /* Level header */
 #level-header {
     margin-bottom: 6px;
+    text-align: center;
 }
 #level-label {
     font-size: 13px;
@@ -25,16 +27,18 @@ h3 { color: #fff; }
     font-size: 15px;
     color: #ddd;
     margin: 6px 0 2px;
+    text-align: center;
 }
 
 .hint {
     font-size: 13px;
     color: #888;
     margin-bottom: 10px;
+    text-align: center;
 }
 
-/* Pond visual */
-#pond-wrapper {
+/* Visual area (the "web") */
+#web-wrapper {
     background: #1a1220;
     border: 2px solid #6b3fa0;
     border-radius: 8px;
@@ -45,7 +49,7 @@ h3 { color: #fff; }
     align-items: stretch;
 }
 
-#pond {
+#web-container {
     display: flex;
     flex-direction: row;
     width: 100%;
@@ -53,7 +57,7 @@ h3 { color: #fff; }
     transition: all 0.4s ease;
 }
 
-#frog, #lilypad {
+#spider, #target-web {
     font-size: 40px;
     display: flex;
     align-items: center;
@@ -115,6 +119,7 @@ h3 { color: #fff; }
     font-weight: bold;
     padding: 8px 0;
     margin-bottom: 6px;
+    text-align: center;
 }
 #feedback.correct { color: #6bcf6b; }
 #feedback.wrong   { color: #ff6060; }
@@ -137,7 +142,15 @@ button:hover { background: #2589c3; }
 }
 #next-btn:hover { background: #33a84c; }
 
+#action-buttons {
+    text-align: center;
+}
+
 /* Result screen */
+#result-screen {
+    text-align: center;
+}
+
 #result-box {
     background: #2a2a2a;
     border: 1px solid #444;
@@ -146,5 +159,9 @@ button:hover { background: #2589c3; }
     font-size: 16px;
 }
 #result-box p { margin: 6px 0; }
+
+.buttons-row {
+    text-align: center;
+}
 
 a button { margin-top: 10px; }

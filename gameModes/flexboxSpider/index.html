@@ -17,11 +17,11 @@
     <p id="level-desc">Loading...</p>
     <p id="level-hint" class="hint"></p>
 
-    <!-- Visual Pond -->
-    <div id="pond-wrapper">
-        <div id="pond">
-            <div id="frog">🕷️</div>
-            <div id="lilypad">🕸️</div>
+    <!-- Visual Web -->
+    <div id="web-wrapper">
+        <div id="web-container">
+            <div id="spider">🕷️</div>
+            <div id="target-web">🕸️</div>
         </div>
     </div>
 
@@ -29,7 +29,7 @@
     <div id="editor-area">
         <div id="editor-label">/* Type your CSS property below */</div>
         <div id="css-rule-wrapper">
-            <span class="css-selector" id="css-selector-label">#pond {</span>
+            <span class="css-selector" id="css-selector-label">#web-container {</span>
             <textarea
                 id="css-input"
                 placeholder="  justify-content: flex-end;"
@@ -59,7 +59,7 @@
     <div id="result-box">
         <p>Levels Completed: <b id="res-levels"></b></p>
     </div>
-    <div>
+    <div class="buttons-row">
         <button onclick="restartGame()">Play Again</button>
         <a href="/"><button type="button">Main Menu</button></a>
     </div>
