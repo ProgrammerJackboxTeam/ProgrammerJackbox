@@ -11,8 +11,9 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 
-const BUG_FIXER_MIN_PLAYERS = 4;
+const BUG_FIXER_MIN_PLAYERS = 3;
 const BUG_FIXER_HAND_SIZE = 5;
+const BUG_FIXER_FINALIZE_DELAY_MS = 10000;
 
 function normalizeName(name) {
     return String(name || "").trim().toLowerCase();
@@ -46,7 +47,24 @@ function loadBugFixerData() {
 
 const bugFixerData = loadBugFixerData();
 
-const rooms = {}; // { ROOMCODE: { host, players, selectedGame, bugFixer } }
+function loadGameModes() {
+    const gameModesPath = path.join(__dirname, "public", "gamemodes.json");
+    try {
+        const raw = JSON.parse(fs.readFileSync(gameModesPath, "utf8"));
+        return Array.isArray(raw) ? raw : [];
+    } catch {
+        return [];
+    }
+}
+
+const gameModesData = loadGameModes();
+const validGameModeNames = new Set(
+    gameModesData
+        .map(entry => entry && entry.name)
+        .filter(Boolean)
+);
+
+const rooms = {}; // { ROOMCODE: { host, players, selectedGame, visibility, bugFixer } }
 
 function shuffle(array) {
     const copy = [...array];
@@ -63,6 +81,37 @@ function sampleUnique(array, count) {
     }
 
     return shuffle(array).slice(0, count);
+}
+
+function randomItem(array) {
+    if (!Array.isArray(array) || array.length === 0) {
+        return null;
+    }
+
+    return array[Math.floor(Math.random() * array.length)];
+}
+
+function sanitizeNonNegativeInt(value, fallback = 0) {
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+        return fallback;
+    }
+    return parsed;
+}
+
+function clearBugFixerTimer(state, key) {
+    if (!state || !state.timerHandles || !state.timerHandles[key]) {
+        return;
+    }
+
+    clearTimeout(state.timerHandles[key]);
+    state.timerHandles[key] = null;
+}
+
+function clearAllBugFixerTimers(state) {
+    clearBugFixerTimer(state, "submissionTimeout");
+    clearBugFixerTimer(state, "deciderTimeout");
+    clearBugFixerTimer(state, "finalizeTimeout");
 }
 
 function countPromptBlanks(prompt) {
@@ -142,28 +191,7 @@ function nextPrompt(state) {
         return null;
     }
 
-    if (!Array.isArray(state.usedPromptIndices)) {
-        state.usedPromptIndices = [];
-    }
-
-    if (state.usedPromptIndices.length >= prompts.length) {
-        state.usedPromptIndices = [];
-    }
-
-    const availableIndices = [];
-    for (let i = 0; i < prompts.length; i += 1) {
-        if (!state.usedPromptIndices.includes(i)) {
-            availableIndices.push(i);
-        }
-    }
-
-    if (availableIndices.length === 0) {
-        return null;
-    }
-
-    const selectedIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-    state.usedPromptIndices.push(selectedIndex);
-    return prompts[selectedIndex];
+    return randomItem(prompts);
 }
 
 function ensureDeciderOrder(room) {
@@ -183,6 +211,200 @@ function ensureDeciderOrder(room) {
     }
 }
 
+function pickRandomCardsFromHand(hand, count) {
+    const safeHand = Array.isArray(hand) ? [...hand] : [];
+    const wanted = Math.max(1, count);
+    if (safeHand.length <= wanted) {
+        return safeHand;
+    }
+    return sampleUnique(safeHand, wanted);
+}
+
+function buildSubmissionOptions(round) {
+    const shuffled = shuffle(Object.values(round.submissions));
+    return shuffled.map((submission, index) => ({
+        submissionId: index + 1,
+        playerId: submission.playerId,
+        text: submission.text
+    }));
+}
+
+function getNonDeciderPlayerIds(room, round) {
+    return room.players
+        .map(player => player.id)
+        .filter(playerId => playerId !== round.deciderId);
+}
+
+function chooseLowestScorePlayerId(room, round) {
+    const eligible = getNonDeciderPlayerIds(room, round);
+    if (eligible.length === 0) {
+        return null;
+    }
+
+    let lowest = Number.POSITIVE_INFINITY;
+    eligible.forEach(playerId => {
+        const score = room.bugFixer.scores[playerId] || 0;
+        if (score < lowest) {
+            lowest = score;
+        }
+    });
+
+    const tied = eligible.filter(playerId => (room.bugFixer.scores[playerId] || 0) === lowest);
+    return randomItem(tied);
+}
+
+function replenishHandsAfterRound(room, round) {
+    Object.values(round.submissions).forEach(submission => {
+        const currentHand = room.bugFixer.hands[submission.playerId] || [];
+        const remaining = [...currentHand];
+
+        submission.cards.forEach(card => {
+            const removeAt = remaining.indexOf(card);
+            if (removeAt !== -1) {
+                remaining.splice(removeAt, 1);
+            }
+        });
+
+        room.bugFixer.hands[submission.playerId] = drawCardsForHand(remaining, BUG_FIXER_HAND_SIZE);
+    });
+}
+
+function enterJudgingPhase(roomCode) {
+    const room = rooms[roomCode];
+    if (!room || !room.bugFixer || !room.bugFixer.currentRound) {
+        return;
+    }
+
+    const state = room.bugFixer;
+    const round = state.currentRound;
+
+    round.phase = "judging";
+    round.submissionOptions = buildSubmissionOptions(round);
+    round.deciderDeadlineAt = null;
+    round.finalizeDeadlineAt = null;
+    round.pendingWinnerPlayerId = null;
+    round.pendingWinnerSubmissionId = null;
+
+    clearBugFixerTimer(state, "submissionTimeout");
+    clearBugFixerTimer(state, "finalizeTimeout");
+    clearBugFixerTimer(state, "deciderTimeout");
+
+    const deciderSeconds = sanitizeNonNegativeInt(state.settings && state.settings.deciderSeconds, 0);
+    if (deciderSeconds > 0) {
+        round.deciderDeadlineAt = Date.now() + (deciderSeconds * 1000);
+        state.timerHandles.deciderTimeout = setTimeout(() => {
+            const liveRoom = rooms[roomCode];
+            if (!liveRoom || !liveRoom.bugFixer || !liveRoom.bugFixer.active || !liveRoom.bugFixer.currentRound) {
+                return;
+            }
+
+            const liveRound = liveRoom.bugFixer.currentRound;
+            if (liveRound.phase !== "judging" && liveRound.phase !== "confirming") {
+                return;
+            }
+
+            let timedOutWinnerId = null;
+            if ((liveRoom.bugFixer.settings && liveRoom.bugFixer.settings.deciderTimeoutAction) === "lowest-score") {
+                timedOutWinnerId = chooseLowestScorePlayerId(liveRoom, liveRound);
+            }
+
+            finalizeBugFixerRound(roomCode, {
+                winnerPlayerId: timedOutWinnerId,
+                reason: timedOutWinnerId ? "decider-timeout-lowest" : "decider-timeout-none"
+            });
+        }, deciderSeconds * 1000);
+    }
+
+    emitBugFixerState(roomCode);
+}
+
+function finalizeBugFixerRound(roomCode, { winnerPlayerId = null, reason = "decider-picked" } = {}) {
+    const room = rooms[roomCode];
+    if (!room || room.selectedGame !== "bugFixerGame" || !room.bugFixer || !room.bugFixer.active || !room.bugFixer.currentRound) {
+        return;
+    }
+
+    const state = room.bugFixer;
+    const round = state.currentRound;
+
+    clearAllBugFixerTimers(state);
+
+    if (winnerPlayerId) {
+        if (!state.scores[winnerPlayerId]) {
+            state.scores[winnerPlayerId] = 0;
+        }
+        state.scores[winnerPlayerId] += 1;
+    }
+
+    replenishHandsAfterRound(room, round);
+
+    const revealedSubmissions = (round.submissionOptions || []).map(option => ({
+        playerName: getPlayerName(room, option.playerId),
+        text: option.text
+    }));
+
+    if (!winnerPlayerId) {
+        state.lastResult = {
+            message: reason === "decider-timeout-none"
+                ? `${getPlayerName(room, round.deciderId)} timed out. No point awarded this round.`
+                : "No point awarded this round.",
+            revealedSubmissions
+        };
+    } else if (reason === "decider-timeout-lowest") {
+        state.lastResult = {
+            message: `${getPlayerName(room, round.deciderId)} timed out. Point awarded to lowest-score player ${getPlayerName(room, winnerPlayerId)}.`,
+            revealedSubmissions
+        };
+    } else {
+        state.lastResult = {
+            message: `${getPlayerName(room, round.deciderId)} picked ${getPlayerName(room, winnerPlayerId)}.`,
+            revealedSubmissions
+        };
+    }
+
+    if (winnerPlayerId && state.scores[winnerPlayerId] >= state.pointsToWin) {
+        state.active = false;
+        state.currentRound = null;
+        state.lastResult = {
+            message: `${getPlayerName(room, winnerPlayerId)} wins Bug Fixer (${state.scores[winnerPlayerId]} points)!`,
+            revealedSubmissions
+        };
+        emitBugFixerState(roomCode);
+        return;
+    }
+
+    startNextBugFixerRound(roomCode);
+}
+
+function autoSubmitMissingPlayers(roomCode) {
+    const room = rooms[roomCode];
+    if (!room || !room.bugFixer || !room.bugFixer.currentRound || !room.bugFixer.active) {
+        return;
+    }
+
+    const round = room.bugFixer.currentRound;
+    if (round.phase !== "submitting") {
+        return;
+    }
+
+    const nonDeciderIds = getNonDeciderPlayerIds(room, round);
+    nonDeciderIds.forEach(playerId => {
+        if (round.submissions[playerId]) {
+            return;
+        }
+
+        const hand = room.bugFixer.hands[playerId] || [];
+        const pickedCards = pickRandomCardsFromHand(hand, round.responsesRequired);
+        round.submissions[playerId] = {
+            playerId,
+            cards: pickedCards,
+            text: pickedCards.join(" | ")
+        };
+    });
+
+    enterJudgingPhase(roomCode);
+}
+
 function buildBugFixerPayloadForPlayer(room, playerId) {
     const state = room.bugFixer;
     const canStart = room.selectedGame === "bugFixerGame"
@@ -197,6 +419,7 @@ function buildBugFixerPayloadForPlayer(room, playerId) {
                 ? `Need at least ${BUG_FIXER_MIN_PLAYERS} players to start Bug Fixer.`
                 : "Bug Fixer is ready.",
             pointsToWin: state && state.pointsToWin ? state.pointsToWin : null,
+            timerSettings: state && state.settings ? state.settings : null,
             scores: buildBugFixerScores(room, state || { scores: {} }),
             lastResult: state ? state.lastResult : null
         };
@@ -206,15 +429,30 @@ function buildBugFixerPayloadForPlayer(room, playerId) {
     const isDecider = round.deciderId === playerId;
     const submissionsNeeded = room.players.length - 1;
     const submittedCount = Object.keys(round.submissions).length;
+    let message = "";
+
+    if (round.phase === "submitting") {
+        message = `Waiting for submissions (${submittedCount}/${submissionsNeeded}).`;
+    } else if (round.phase === "judging") {
+        message = isDecider
+            ? "Choose a winner."
+            : "Decider is choosing a winner.";
+    } else if (round.phase === "confirming") {
+        message = isDecider
+            ? "Winner selected. You can still change it before finalization."
+            : "Decider locked a choice. Finalizing shortly.";
+    }
 
     return {
         active: true,
         canStart,
+        message,
         roundNumber: state.roundNumber,
         phase: round.phase,
         prompt: round.prompt,
         responsesRequired: round.responsesRequired,
         pointsToWin: state.pointsToWin,
+        timerSettings: state.settings,
         deciderId: round.deciderId,
         deciderName: getPlayerName(room, round.deciderId),
         isDecider,
@@ -222,12 +460,17 @@ function buildBugFixerPayloadForPlayer(room, playerId) {
         yourSubmitted: Boolean(round.submissions[playerId]),
         submissionsNeeded,
         submittedCount,
-        submissionOptions: isDecider && round.phase === "judging"
+        submissionOptions: isDecider && (round.phase === "judging" || round.phase === "confirming")
             ? round.submissionOptions.map(option => ({
                 submissionId: option.submissionId,
                 text: option.text
             }))
             : [],
+        submissionDeadlineTs: round.submissionDeadlineAt || null,
+        deciderDeadlineTs: round.deciderDeadlineAt || null,
+        finalizeDeadlineTs: round.finalizeDeadlineAt || null,
+        pendingWinnerSubmissionId: isDecider ? (round.pendingWinnerSubmissionId || null) : null,
+        serverNowTs: Date.now(),
         scores: buildBugFixerScores(room, state),
         lastResult: state.lastResult
     };
@@ -262,8 +505,9 @@ function startNextBugFixerRound(roomCode) {
     ensureDeciderOrder(room);
     const state = room.bugFixer;
 
+    clearAllBugFixerTimers(state);
+
     if (state.deciderIndex >= state.deciderOrder.length) {
-        state.deciderOrder = shuffle(room.players.map(player => player.id));
         state.deciderIndex = 0;
     }
 
@@ -291,13 +535,26 @@ function startNextBugFixerRound(roomCode) {
         prompt: promptText,
         responsesRequired,
         submissions: {},
-        submissionOptions: []
+        submissionOptions: [],
+        pendingWinnerPlayerId: null,
+        pendingWinnerSubmissionId: null,
+        submissionDeadlineAt: null,
+        deciderDeadlineAt: null,
+        finalizeDeadlineAt: null
     };
+
+    const submitSeconds = sanitizeNonNegativeInt(state.settings && state.settings.submissionSeconds, 0);
+    if (submitSeconds > 0) {
+        state.currentRound.submissionDeadlineAt = Date.now() + (submitSeconds * 1000);
+        state.timerHandles.submissionTimeout = setTimeout(() => {
+            autoSubmitMissingPlayers(roomCode);
+        }, submitSeconds * 1000);
+    }
 
     emitBugFixerState(roomCode);
 }
 
-function initializeBugFixer(roomCode, pointsToWin) {
+function initializeBugFixer(roomCode, payload) {
     const room = rooms[roomCode];
     if (!room) {
         return "Room not found.";
@@ -313,10 +570,16 @@ function initializeBugFixer(roomCode, pointsToWin) {
         return "Bug Fixer data is incomplete. Check prompt and solution card JSON files.";
     }
 
-    const targetPoints = Number(pointsToWin);
+    const targetPoints = Number(payload && payload.pointsToWin);
     if (!Number.isInteger(targetPoints) || targetPoints < 1) {
         return "Points to win must be a whole number of at least 1.";
     }
+
+    const submissionSeconds = sanitizeNonNegativeInt(payload && payload.submissionSeconds, 0);
+    const deciderSeconds = sanitizeNonNegativeInt(payload && payload.deciderSeconds, 0);
+    const timeoutAction = payload && payload.deciderTimeoutAction === "lowest-score"
+        ? "lowest-score"
+        : "no-point";
 
     const scores = {};
     const hands = {};
@@ -325,17 +588,30 @@ function initializeBugFixer(roomCode, pointsToWin) {
         hands[player.id] = drawCardsForHand([], BUG_FIXER_HAND_SIZE);
     });
 
+    if (room.bugFixer) {
+        clearAllBugFixerTimers(room.bugFixer);
+    }
+
     room.bugFixer = {
         active: true,
         pointsToWin: targetPoints,
+        settings: {
+            submissionSeconds,
+            deciderSeconds,
+            deciderTimeoutAction: timeoutAction
+        },
         scores,
         hands,
         deciderOrder: [],
         deciderIndex: 0,
-        usedPromptIndices: [],
         roundNumber: 0,
         currentRound: null,
-        lastResult: null
+        lastResult: null,
+        timerHandles: {
+            submissionTimeout: null,
+            deciderTimeout: null,
+            finalizeTimeout: null
+        }
     };
 
     startNextBugFixerRound(roomCode);
@@ -346,6 +622,48 @@ function generateRoomCode() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+function createRoom({ hostId, hostName, visibility = "private", selectedGame = null }) {
+    const roomCode = generateRoomCode();
+    rooms[roomCode] = {
+        host: hostId,
+        players: [{ id: hostId, name: hostName }],
+        selectedGame,
+        visibility,
+        bugFixer: null
+    };
+    return roomCode;
+}
+
+function getPreferredGameModes(preferredGameModes) {
+    if (!Array.isArray(preferredGameModes)) {
+        return [];
+    }
+
+    const unique = [...new Set(preferredGameModes.map(entry => String(entry || "").trim()).filter(Boolean))];
+    return unique.filter(game => validGameModeNames.has(game));
+}
+
+function findAvailablePublicRoomsByGames(preferredGames) {
+    const preferred = new Set(preferredGames);
+    return Object.entries(rooms)
+        .filter(([, room]) => {
+            if (!room || room.visibility !== "public") {
+                return false;
+            }
+
+            if (!room.selectedGame || !preferred.has(room.selectedGame)) {
+                return false;
+            }
+
+            if (room.selectedGame === "bugFixerGame" && room.bugFixer && room.bugFixer.active) {
+                return false;
+            }
+
+            return true;
+        })
+        .map(([roomCode, room]) => ({ roomCode, room }));
+}
+
 function emitRoomUpdate(roomCode) {
     const room = rooms[roomCode];
     if (!room) {
@@ -354,31 +672,107 @@ function emitRoomUpdate(roomCode) {
 
     io.to(roomCode).emit("update-players", {
         players: room.players,
-        hostId: room.host
+        hostId: room.host,
+        visibility: room.visibility || "private"
     });
 }
 
 io.on("connection", socket => {
     console.log("User connected:", socket.id);
 
-    socket.on("host-room", name => {
+    socket.on("host-room", payload => {
+        const rawName = typeof payload === "object" && payload !== null ? payload.name : payload;
+        const visibility = typeof payload === "object" && payload !== null && payload.visibility === "public"
+            ? "public"
+            : "private";
+
+        const trimmedName = String(rawName || "").trim();
+        if (!trimmedName) {
+            socket.emit("join-error", "Name is required.");
+            return;
+        }
+
+        const roomCode = createRoom({
+            hostId: socket.id,
+            hostName: trimmedName,
+            visibility,
+            selectedGame: null
+        });
+
+        socket.join(roomCode);
+        socket.emit("room-created", { roomCode, visibility, isHost: true });
+        emitRoomUpdate(roomCode);
+    });
+
+    socket.on("join-random-room", ({ name, preferredGameModes }) => {
         const trimmedName = String(name || "").trim();
         if (!trimmedName) {
             socket.emit("join-error", "Name is required.");
             return;
         }
 
-        const roomCode = generateRoomCode();
-        rooms[roomCode] = {
-            host: socket.id,
-            players: [{ id: socket.id, name: trimmedName }],
-            selectedGame: null,
-            bugFixer: null
-        };
+        const preferred = getPreferredGameModes(preferredGameModes);
+        if (preferred.length === 0) {
+            socket.emit("join-error", "Select at least one valid game for random matchmaking.");
+            return;
+        }
 
-        socket.join(roomCode);
-        socket.emit("room-created", roomCode);
-        emitRoomUpdate(roomCode);
+        const availableRooms = findAvailablePublicRoomsByGames(preferred);
+        let targetRoomCode = null;
+        let targetRoom = null;
+        let created = false;
+
+        if (availableRooms.length > 0) {
+            const byGame = {};
+            availableRooms.forEach(entry => {
+                if (!byGame[entry.room.selectedGame]) {
+                    byGame[entry.room.selectedGame] = [];
+                }
+                byGame[entry.room.selectedGame].push(entry);
+            });
+
+            const availableGames = Object.keys(byGame);
+            const selectedGame = randomItem(availableGames);
+            const roomEntry = randomItem(byGame[selectedGame]);
+            targetRoomCode = roomEntry.roomCode;
+            targetRoom = roomEntry.room;
+        } else {
+            const selectedGame = randomItem(preferred);
+            targetRoomCode = createRoom({
+                hostId: socket.id,
+                hostName: trimmedName,
+                visibility: "public",
+                selectedGame
+            });
+            targetRoom = rooms[targetRoomCode];
+            created = true;
+        }
+
+        const duplicate = targetRoom.players.some(player => normalizeName(player.name) === normalizeName(trimmedName));
+        if (duplicate) {
+            socket.emit("join-error", "That name is already in this lobby. Choose a different name.");
+            return;
+        }
+
+        if (!created) {
+            targetRoom.players.push({ id: socket.id, name: trimmedName });
+        }
+
+        socket.join(targetRoomCode);
+
+        socket.emit("room-created", {
+            roomCode: targetRoomCode,
+            visibility: "public",
+            isHost: created,
+            selectedGame: targetRoom.selectedGame
+        });
+
+        emitRoomUpdate(targetRoomCode);
+        io.to(targetRoomCode).emit("gamemode-selected", targetRoom.selectedGame);
+
+        if (targetRoom.selectedGame === "bugFixerGame") {
+            emitBugFixerState(targetRoomCode);
+        }
     });
 
     socket.on("join-room", ({ roomCode, name }) => {
@@ -388,6 +782,11 @@ io.on("connection", socket => {
         }
 
         const room = rooms[roomCode];
+        if (room.visibility === "public") {
+            socket.emit("join-error", "This is a public random lobby. Use random matchmaking to join public games.");
+            return;
+        }
+
         const normalizedIncomingName = normalizeName(name);
         if (!normalizedIncomingName) {
             socket.emit("join-error", "Name is required.");
@@ -425,6 +824,10 @@ io.on("connection", socket => {
             return;
         }
 
+        if (room.visibility === "public") {
+            return;
+        }
+
         room.selectedGame = gameMode;
         room.bugFixer = null;
         io.to(roomCode).emit("gamemode-selected", gameMode);
@@ -434,13 +837,14 @@ io.on("connection", socket => {
         }
     });
 
-    socket.on("start-bugfixer", ({ roomCode, pointsToWin }) => {
+    socket.on("start-bugfixer", payload => {
+        const roomCode = payload && payload.roomCode;
         const room = rooms[roomCode];
         if (!room || room.host !== socket.id || room.selectedGame !== "bugFixerGame") {
             return;
         }
 
-        const error = initializeBugFixer(roomCode, pointsToWin);
+        const error = initializeBugFixer(roomCode, payload || {});
         if (error) {
             socket.emit("bugfixer-error", error);
         }
@@ -487,13 +891,8 @@ io.on("connection", socket => {
 
         const nonDeciderCount = room.players.length - 1;
         if (Object.keys(round.submissions).length >= nonDeciderCount) {
-            round.phase = "judging";
-            const shuffled = shuffle(Object.values(round.submissions));
-            round.submissionOptions = shuffled.map((submission, index) => ({
-                submissionId: index + 1,
-                playerId: submission.playerId,
-                text: submission.text
-            }));
+            enterJudgingPhase(roomCode);
+            return;
         }
 
         emitBugFixerState(roomCode);
@@ -506,7 +905,7 @@ io.on("connection", socket => {
         }
 
         const round = room.bugFixer.currentRound;
-        if (!round || round.phase !== "judging" || round.deciderId !== socket.id) {
+        if (!round || (round.phase !== "judging" && round.phase !== "confirming") || round.deciderId !== socket.id) {
             return;
         }
 
@@ -516,47 +915,27 @@ io.on("connection", socket => {
             return;
         }
 
-        if (!room.bugFixer.scores[picked.playerId]) {
-            room.bugFixer.scores[picked.playerId] = 0;
-        }
-        room.bugFixer.scores[picked.playerId] += 1;
+        clearBugFixerTimer(room.bugFixer, "deciderTimeout");
+        clearBugFixerTimer(room.bugFixer, "finalizeTimeout");
+
+        round.phase = "confirming";
+        round.pendingWinnerPlayerId = picked.playerId;
+        round.pendingWinnerSubmissionId = picked.submissionId;
+        round.finalizeDeadlineAt = Date.now() + BUG_FIXER_FINALIZE_DELAY_MS;
+
+        room.bugFixer.timerHandles.finalizeTimeout = setTimeout(() => {
+            finalizeBugFixerRound(roomCode, {
+                winnerPlayerId: picked.playerId,
+                reason: "decider-picked"
+            });
+        }, BUG_FIXER_FINALIZE_DELAY_MS);
+
         room.bugFixer.lastResult = {
-            message: `${getPlayerName(room, round.deciderId)} picked ${getPlayerName(room, picked.playerId)}.`,
-            revealedSubmissions: round.submissionOptions.map(option => ({
-                playerName: getPlayerName(room, option.playerId),
-                text: option.text
-            }))
+            message: `${getPlayerName(room, round.deciderId)} selected a winner. Finalizing in 10 seconds (selection can still be changed).`,
+            revealedSubmissions: []
         };
 
-        Object.values(round.submissions).forEach(submission => {
-            const currentHand = room.bugFixer.hands[submission.playerId] || [];
-            const remaining = [...currentHand];
-
-            submission.cards.forEach(card => {
-                const removeAt = remaining.indexOf(card);
-                if (removeAt !== -1) {
-                    remaining.splice(removeAt, 1);
-                }
-            });
-
-            room.bugFixer.hands[submission.playerId] = drawCardsForHand(remaining, BUG_FIXER_HAND_SIZE);
-        });
-
-        if (room.bugFixer.scores[picked.playerId] >= room.bugFixer.pointsToWin) {
-            room.bugFixer.active = false;
-            room.bugFixer.currentRound = null;
-            room.bugFixer.lastResult = {
-                message: `${getPlayerName(room, picked.playerId)} wins Bug Fixer (${room.bugFixer.scores[picked.playerId]} points)!`,
-                revealedSubmissions: round.submissionOptions.map(option => ({
-                    playerName: getPlayerName(room, option.playerId),
-                    text: option.text
-                }))
-            };
-            emitBugFixerState(roomCode);
-            return;
-        }
-
-        startNextBugFixerRound(roomCode);
+        emitBugFixerState(roomCode);
     });
 
     socket.on("terminate-game", ({ roomCode }) => {
@@ -566,6 +945,9 @@ io.on("connection", socket => {
         }
 
         const terminatedGame = room.selectedGame;
+        if (room.bugFixer) {
+            clearAllBugFixerTimers(room.bugFixer);
+        }
         room.selectedGame = null;
         room.bugFixer = null;
 
@@ -592,6 +974,7 @@ io.on("connection", socket => {
 
                     if (room.selectedGame === "bugFixerGame") {
                         if (room.bugFixer) {
+                            clearAllBugFixerTimers(room.bugFixer);
                             ensureBugFixerPlayerState(room);
                         }
 

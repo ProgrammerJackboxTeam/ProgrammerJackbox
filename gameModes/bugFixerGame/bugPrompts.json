@@ -1,10 +1,14 @@
 [
     {
        "responses": 2,
-        "prompt": "You are testing a function with no input parameters that returns a float, but are getting an error that indicates that somewhere, something is being divided by zero. To fix this, you first do (a) _____, then (a) _____"
+        "prompt": "You are testing a function with no input parameters that returns a float, but are getting an error that indicates that somewhere, something is being divided by zero. To fix this, you first do (a) _____, then (a) _____."
     },
     {
         "responses": 1,
-        "prompt": "You are writiting some code that recieves a string input, but a catch you wrote earlier is warning you about a potential code injection vulnerability. To fix this, you _____"
+        "prompt": "You are writiting some code that recieves a string input, but a catch you wrote earlier is warning you about a potential code injection vulnerability. To fix this, you _____."
+    },
+    {
+        "responses": 2,
+        "prompt": "While testing your code, you see a library is not being displayed as imported. To see if this is an issue, you _____, and if it is, you _____."
     }
 ]
