@@ -7,6 +7,7 @@
         .hidden { display: none; }
         table { border-collapse: collapse; margin-top: 10px; }
         td, th { border: 1px solid #ccc; padding: 6px 12px; }
+        #gameSelectArea { margin-top: 12px; }
     </style>
 </head>
 <body>
@@ -17,19 +18,29 @@
 
 <div id="menu" class="hidden">
     <h2>Main Menu</h2>
-    <button onclick="hostLobby()">Host a Lobby</button>
-    <button onclick="showJoin()">Join a Lobby</button>
+    <button onclick="hostPrivateLobby()">Host Private Lobby</button>
+    <button onclick="joinRandomLobby()">Join Random Public Lobby</button>
+    <button onclick="showJoin()">Join Private Lobby by Code</button>
 </div>
 
 <div id="joinSection" class="hidden">
-    <h3>Join Lobby</h3>
+    <h3>Join Private Lobby</h3>
     <input id="joinCode" type="text" placeholder="Room code">
     <button onclick="joinLobby()">Join</button>
     <button onclick="back()">Back</button>
 </div>
 
+<div id="randomJoinSection" class="hidden">
+    <h3>Join Random Public Lobby</h3>
+    <p>Pick one or more games you want to play:</p>
+    <div id="randomGameChecklist"></div>
+    <button onclick="submitRandomJoinPreferences()">Find Public Lobby</button>
+    <button onclick="backToMenu()">Back</button>
+</div>
+
 <div id="hostSection" class="hidden">
     <h3>Hosting Lobby</h3>
+    <p>Lobby type: <strong id="lobbyTypeLabel">Private</strong></p>
     <p>Your room code:</p>
     <h2 id="roomKey"></h2>
 
@@ -37,6 +48,60 @@
     <table id="playerTable">
         <tr><th>Name</th></tr>
     </table>
+
+    <button id="selectGameButton" class="hidden" onclick="showGameSelect()">Select a Game</button>
+    <div id="gameSelectArea" class="hidden">
+        <label for="gameSelect">Game mode:</label>
+        <select id="gameSelect"></select>
+        <button onclick="confirmGameSelect()">Confirm</button>
+        <p id="gameDetails"></p>
+    </div>
+    <p id="selectedGameDisplay" class="hidden"></p>
+    <button id="terminateGameButton" class="hidden" onclick="terminateCurrentGame()">Terminate Current Game</button>
+
+    <div id="bugFixerArea" class="hidden">
+        <h3>Bug Fixer</h3>
+        <p id="bugFixerStatus">Waiting to start.</p>
+        <label for="bugFixerPointsToWinInput">Points to win:</label>
+        <input id="bugFixerPointsToWinInput" type="number" min="1" value="5">
+
+        <label for="bugFixerSubmissionSecondsInput">Player submit timer (seconds, 0 = off):</label>
+        <input id="bugFixerSubmissionSecondsInput" type="number" min="0" value="0">
+
+        <label for="bugFixerDeciderSecondsInput">Decider pick timer (seconds, 0 = off):</label>
+        <input id="bugFixerDeciderSecondsInput" type="number" min="0" value="0">
+
+        <label for="bugFixerDeciderTimeoutAction">If decider times out:</label>
+        <select id="bugFixerDeciderTimeoutAction">
+            <option value="no-point">No point awarded</option>
+            <option value="lowest-score">Award point to lowest-score player</option>
+        </select>
+
+        <button id="startBugFixerButton" class="hidden" onclick="startBugFixerGame()">Start Bug Fixer</button>
+
+        <p><strong>Decider:</strong> <span id="bugFixerDecider">-</span></p>
+        <p><strong>Prompt:</strong> <span id="bugFixerPrompt">-</span></p>
+        <p><strong>Responses Required:</strong> <span id="bugFixerResponsesRequired">0</span></p>
+
+        <div id="bugFixerHandArea">
+            <h4>Your Hand</h4>
+            <div id="bugFixerHand"></div>
+            <h4>Selected In Order</h4>
+            <div id="bugFixerSelectedOrder"></div>
+            <button id="bugFixerSubmitButton" class="hidden" onclick="submitBugFixerCards()">Submit Selected Card(s)</button>
+        </div>
+
+        <div id="bugFixerJudgeArea" class="hidden">
+            <h4>Choose a Winner</h4>
+            <div id="bugFixerSubmissions"></div>
+        </div>
+
+        <h4>Scoreboard</h4>
+        <ul id="bugFixerScoreboard"></ul>
+
+        <h4>Last Reveal</h4>
+        <ul id="bugFixerRevealList"></ul>
+    </div>
 
     <button onclick="back()">Close Lobby</button>
 </div>
