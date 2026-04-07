@@ -10,6 +10,8 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static("public"));
+app.use("/codeTyper", express.static("gameModes/codeTyper"));
+app.use("/flexboxSpider", express.static("gameModes/flexboxSpider"));
 
 const BUG_FIXER_MIN_PLAYERS = 3;
 const BUG_FIXER_HAND_SIZE = 5;
