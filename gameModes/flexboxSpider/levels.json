@@ -1,84 +1,84 @@
 [
-  {
-    "level": 1,
-    "description": "The spider needs to crawl to the right side of the web! Move it to the end of the row.",
-    "hint": "Try: justify-content",
-    "property": "justify-content",
-    "answer": "flex-end",
-    "startCss": { "flexDirection": "row" }
-  },
-  {
-    "level": 2,
-    "description": "The spider wants to sit in the middle of the web. Center it horizontally!",
-    "hint": "Try: justify-content",
-    "property": "justify-content",
-    "answer": "center",
-    "startCss": { "flexDirection": "row" }
-  },
-  {
-    "level": 3,
-    "description": "The spider and web should be spread out — one on each end!",
-    "hint": "Try: justify-content",
-    "property": "justify-content",
-    "answer": "space-between",
-    "startCss": { "flexDirection": "row" }
-  },
-  {
-    "level": 4,
-    "description": "The spider needs to be placed at the bottom of the web. Move it to the cross-axis end.",
-    "hint": "Try: align-items",
-    "property": "align-items",
-    "answer": "flex-end",
-    "startCss": { "flexDirection": "row" }
-  },
-  {
-    "level": 5,
-    "description": "Center the spider vertically in the web — it floats in the middle of the column!",
-    "hint": "Try: align-items",
-    "property": "align-items",
-    "answer": "center",
-    "startCss": { "flexDirection": "row" }
-  },
-  {
-    "level": 6,
-    "description": "The spider wants to crawl from bottom to top! Reverse the column direction.",
-    "hint": "Try: flex-direction",
-    "property": "flex-direction",
-    "answer": "column-reverse",
-    "startCss": {}
-  },
-  {
-    "level": 7,
-    "description": "Stack the spider on top — make the web flow in a column layout.",
-    "hint": "Try: flex-direction",
-    "property": "flex-direction",
-    "answer": "column",
-    "startCss": {}
-  },
-  {
-    "level": 8,
-    "description": "The web is too narrow! Allow items to wrap so the spider moves to the next row.",
-    "hint": "Try: flex-wrap",
-    "property": "flex-wrap",
-    "answer": "wrap",
-    "startCss": { "flexDirection": "row" }
-  },
-  {
-    "level": 9,
-    "description": "The spider is out of order! Give the spider an order of -1 to send it to the front.",
-    "hint": "Try: order (applied to the spider)",
-    "property": "order",
-    "answer": "-1",
-    "startCss": { "flexDirection": "row" },
-    "target": "spider"
-  },
-  {
-    "level": 10,
-    "description": "The spider is feeling independent! Use align-self to stick only the spider to the top.",
-    "hint": "Try: align-self (applied to the spider)",
-    "property": "align-self",
-    "answer": "flex-start",
-    "startCss": { "flexDirection": "row", "alignItems": "flex-end" },
-    "target": "spider"
-  }
+    {
+        "level": 1,
+        "description": "The spider needs to crawl to the right side of the web! Move it to the end of the row.",
+        "hint": "Try: justify-content",
+        "property": "justify-content",
+        "answer": "flex-end",
+        "startCss": { "flexDirection": "row" }
+    },
+    {
+        "level": 2,
+        "description": "The spider wants to sit in the middle of the web. Center it horizontally!",
+        "hint": "Try: justify-content",
+        "property": "justify-content",
+        "answer": "center",
+        "startCss": { "flexDirection": "row" }
+    },
+    {
+        "level": 3,
+        "description": "The spider and web should be spread out — one on each end!",
+        "hint": "Try: justify-content",
+        "property": "justify-content",
+        "answer": "space-between",
+        "startCss": { "flexDirection": "row" }
+    },
+    {
+        "level": 4,
+        "description": "The spider needs to be placed at the bottom of the web. Move it to the cross-axis end.",
+        "hint": "Try: align-items",
+        "property": "align-items",
+        "answer": "flex-end",
+        "startCss": { "flexDirection": "row" }
+    },
+    {
+        "level": 5,
+        "description": "Center the spider vertically in the web — it floats in the middle of the column!",
+        "hint": "Try: align-items",
+        "property": "align-items",
+        "answer": "center",
+        "startCss": { "flexDirection": "row" }
+    },
+    {
+        "level": 6,
+        "description": "The spider wants to crawl from bottom to top! Reverse the column direction.",
+        "hint": "Try: flex-direction",
+        "property": "flex-direction",
+        "answer": "column-reverse",
+        "startCss": {}
+    },
+    {
+        "level": 7,
+        "description": "Stack the spider on top — make the web flow in a column layout.",
+        "hint": "Try: flex-direction",
+        "property": "flex-direction",
+        "answer": "column",
+        "startCss": {}
+    },
+    {
+        "level": 8,
+        "description": "The web is too narrow! Allow items to wrap so the spider moves to the next row.",
+        "hint": "Try: flex-wrap",
+        "property": "flex-wrap",
+        "answer": "wrap",
+        "startCss": { "flexDirection": "row" }
+    },
+    {
+        "level": 9,
+        "description": "The spider is out of order! Give the spider an order of -1 to send it to the front.",
+        "hint": "Try: order (applied to the spider)",
+        "property": "order",
+        "answer": "-1",
+        "startCss": { "flexDirection": "row" },
+        "target": "spider"
+    },
+    {
+        "level": 10,
+        "description": "The spider is feeling independent! Use align-self to stick only the spider to the top.",
+        "hint": "Try: align-self (applied to the spider)",
+        "property": "align-self",
+        "answer": "flex-start",
+        "startCss": { "flexDirection": "row", "alignItems": "flex-end" },
+        "target": "spider"
+    }
 ]

@@ -11,8 +11,8 @@ let bugFixerState = null;
 let bugFixerSelectedCards = [];
 
 fetch("/gamemodes.json")
-    .then(response => response.json())
-    .then(data => {
+    .then((response) => response.json())
+    .then((data) => {
         gamemodes = Array.isArray(data) ? data : [];
         updateGamemodeOptions(lastPlayerCount);
     })
@@ -56,7 +56,7 @@ function renderRandomGameChecklist() {
         return;
     }
 
-    gamemodes.forEach(mode => {
+    gamemodes.forEach((mode) => {
         const row = document.createElement("div");
         const label = document.createElement("label");
         const checkbox = document.createElement("input");
@@ -74,7 +74,7 @@ function renderRandomGameChecklist() {
 
 function submitRandomJoinPreferences() {
     const selected = Array.from(document.querySelectorAll("input[name='randomGameMode']:checked"))
-        .map(entry => entry.value)
+        .map((entry) => entry.value)
         .filter(Boolean);
 
     if (selected.length === 0) {
@@ -87,11 +87,11 @@ function submitRandomJoinPreferences() {
     currentLobbyVisibility = "public";
     socket.emit("join-random-room", {
         name: playerName,
-        preferredGameModes: selected
+        preferredGameModes: selected,
     });
 }
 
-socket.on("room-created", payload => {
+socket.on("room-created", (payload) => {
     const roomCode = typeof payload === "string" ? payload : payload.roomCode;
     const visibility = payload && typeof payload === "object" ? payload.visibility : "private";
 
@@ -125,20 +125,20 @@ function joinLobby() {
     socket.emit("join-room", { roomCode, name: playerName });
 }
 
-socket.on("join-error", msg => {
+socket.on("join-error", (msg) => {
     alert(msg);
     currentRoomCode = "";
     currentLobbyVisibility = "private";
 });
 
-socket.on("update-players", payload => {
+socket.on("update-players", (payload) => {
     const players = Array.isArray(payload) ? payload : payload.players;
     const hostId = Array.isArray(payload) ? null : payload.hostId;
-    const visibility = Array.isArray(payload) ? "private" : (payload.visibility || "private");
+    const visibility = Array.isArray(payload) ? "private" : payload.visibility || "private";
     const table = document.getElementById("playerTable");
     table.innerHTML = "<tr><th>Name</th></tr>";
 
-    players.forEach(p => {
+    players.forEach((p) => {
         const row = document.createElement("tr");
         row.innerHTML = `<td>${p.name}</td>`;
         table.appendChild(row);
@@ -170,7 +170,7 @@ socket.on("update-players", payload => {
     renderBugFixerControls();
 });
 
-socket.on("gamemode-selected", gameMode => {
+socket.on("gamemode-selected", (gameMode) => {
     selectedGameMode = gameMode;
     const selectedGameDisplay = document.getElementById("selectedGameDisplay");
     if (gameMode) {
@@ -210,7 +210,7 @@ function showGameSelect() {
 
 function confirmGameSelect() {
     const gameMode = document.getElementById("gameSelect").value;
-    const mode = gamemodes.find(entry => entry.name === gameMode);
+    const mode = gamemodes.find((entry) => entry.name === gameMode);
 
     if (!currentRoomCode) {
         return;
@@ -259,7 +259,7 @@ function startBugFixerGame() {
         pointsToWin,
         submissionSeconds,
         deciderSeconds,
-        deciderTimeoutAction: deciderTimeoutAction.value === "lowest-score" ? "lowest-score" : "no-point"
+        deciderTimeoutAction: deciderTimeoutAction.value === "lowest-score" ? "lowest-score" : "no-point",
     });
 }
 
@@ -269,7 +269,7 @@ function startCodeTyperGame() {
     }
 
     socket.emit("start-codetyper-multiplayer", {
-        roomCode: currentRoomCode
+        roomCode: currentRoomCode,
     });
 }
 
@@ -285,14 +285,14 @@ function submitBugFixerCards() {
 
     socket.emit("bugfixer-submit", {
         roomCode: currentRoomCode,
-        chosenCards: [...bugFixerSelectedCards]
+        chosenCards: [...bugFixerSelectedCards],
     });
 }
 
 function pickBugFixerWinner(submissionId) {
     socket.emit("bugfixer-pick-winner", {
         roomCode: currentRoomCode,
-        submissionId
+        submissionId,
     });
 }
 
@@ -358,15 +358,17 @@ function renderBugFixerControls() {
 
     startButton.classList.toggle("hidden", !(isHost && bugFixerState.canStart));
 
-    const showSubmit = bugFixerState.active
-        && !bugFixerState.isDecider
-        && bugFixerState.phase === "submitting"
-        && !bugFixerState.yourSubmitted;
+    const showSubmit =
+        bugFixerState.active &&
+        !bugFixerState.isDecider &&
+        bugFixerState.phase === "submitting" &&
+        !bugFixerState.yourSubmitted;
     submitButton.classList.toggle("hidden", !showSubmit);
 
-    const showJudge = bugFixerState.active
-        && bugFixerState.isDecider
-        && (bugFixerState.phase === "judging" || bugFixerState.phase === "confirming");
+    const showJudge =
+        bugFixerState.active &&
+        bugFixerState.isDecider &&
+        (bugFixerState.phase === "judging" || bugFixerState.phase === "confirming");
     judgeArea.classList.toggle("hidden", !showJudge);
 
     renderTerminationControls();
@@ -396,9 +398,8 @@ function renderBugFixerState(state) {
     if (state.timerSettings) {
         submissionSecondsInput.value = String(state.timerSettings.submissionSeconds || 0);
         deciderSecondsInput.value = String(state.timerSettings.deciderSeconds || 0);
-        deciderTimeoutAction.value = state.timerSettings.deciderTimeoutAction === "lowest-score"
-            ? "lowest-score"
-            : "no-point";
+        deciderTimeoutAction.value =
+            state.timerSettings.deciderTimeoutAction === "lowest-score" ? "lowest-score" : "no-point";
     }
 
     pointsToWinInput.disabled = Boolean(state.active);
@@ -416,7 +417,7 @@ function renderBugFixerState(state) {
     responsesRequired.innerText = String(state.responsesRequired || 0);
 
     const currentHand = Array.isArray(state.yourHand) ? state.yourHand : [];
-    bugFixerSelectedCards = bugFixerSelectedCards.filter(card => currentHand.includes(card));
+    bugFixerSelectedCards = bugFixerSelectedCards.filter((card) => currentHand.includes(card));
 
     hand.innerHTML = "";
     if (Array.isArray(state.yourHand) && state.yourHand.length > 0) {
@@ -458,7 +459,7 @@ function renderBugFixerState(state) {
 
     submissions.innerHTML = "";
     if (Array.isArray(state.submissionOptions) && state.submissionOptions.length > 0) {
-        state.submissionOptions.forEach(entry => {
+        state.submissionOptions.forEach((entry) => {
             const row = document.createElement("div");
             const buttonLabel = state.phase === "confirming" ? "Switch to This" : "Pick";
             row.innerHTML = `<button onclick="pickBugFixerWinner(${entry.submissionId})">${buttonLabel}</button> ${entry.text}`;
@@ -469,7 +470,7 @@ function renderBugFixerState(state) {
     scoreboard.innerHTML = "";
     if (Array.isArray(state.scores)) {
         const sorted = [...state.scores].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
-        sorted.forEach(entry => {
+        sorted.forEach((entry) => {
             const item = document.createElement("li");
             item.innerText = `${entry.name}: ${entry.score}`;
             scoreboard.appendChild(item);
@@ -478,7 +479,7 @@ function renderBugFixerState(state) {
 
     revealList.innerHTML = "";
     if (state.lastResult && Array.isArray(state.lastResult.revealedSubmissions)) {
-        state.lastResult.revealedSubmissions.forEach(entry => {
+        state.lastResult.revealedSubmissions.forEach((entry) => {
             const item = document.createElement("li");
             item.innerText = `${entry.playerName}: ${entry.text}`;
             revealList.appendChild(item);
@@ -488,14 +489,14 @@ function renderBugFixerState(state) {
     renderBugFixerControls();
 }
 
-socket.on("bugfixer-state", state => {
+socket.on("bugfixer-state", (state) => {
     if (selectedGameMode === "bugFixerGame") {
         document.getElementById("bugFixerArea").classList.remove("hidden");
     }
     renderBugFixerState(state);
 });
 
-socket.on("bugfixer-error", message => {
+socket.on("bugfixer-error", (message) => {
     alert(message);
 });
 
@@ -505,7 +506,7 @@ socket.on("launch-codetyper", ({ roomCode }) => {
     document.getElementById("codeTyperArea").classList.remove("hidden");
 });
 
-socket.on("game-terminated", payload => {
+socket.on("game-terminated", (payload) => {
     selectedGameMode = "";
     bugFixerState = null;
     bugFixerSelectedCards = [];
@@ -515,7 +516,7 @@ socket.on("game-terminated", payload => {
     document.getElementById("codeTyperLobbyControls").classList.add("hidden");
     document.getElementById("codeTyperArea").classList.add("hidden");
     const iframe = document.getElementById("codeTyperIframe");
-    if(iframe) iframe.src = "";
+    if (iframe) iframe.src = "";
     renderTerminationControls();
 
     if (payload && payload.gameMode) {
@@ -531,9 +532,9 @@ function updateGamemodeOptions(playerCount) {
     }
 
     select.innerHTML = "";
-    const available = gamemodes.filter(mode => playerCount >= mode.minPlayers);
+    const available = gamemodes.filter((mode) => playerCount >= mode.minPlayers);
 
-    available.forEach(mode => {
+    available.forEach((mode) => {
         const option = document.createElement("option");
         option.value = mode.name;
         option.textContent = mode.name;
@@ -559,8 +560,8 @@ function updateGamemodeDetails(mode) {
     details.innerText = `${mode.description} (Min players: ${mode.minPlayers})`;
 }
 
-document.getElementById("gameSelect").addEventListener("change", event => {
-    const selected = gamemodes.find(mode => mode.name === event.target.value);
+document.getElementById("gameSelect").addEventListener("change", (event) => {
+    const selected = gamemodes.find((mode) => mode.name === event.target.value);
     if (selected) {
         updateGamemodeDetails(selected);
     }

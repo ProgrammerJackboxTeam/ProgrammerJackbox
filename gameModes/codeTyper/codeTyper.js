@@ -2,8 +2,8 @@ let snippets = [];
 let currentSnippet = null;
 
 fetch("/codeTyper/snippets.json")
-    .then(res => res.json())
-    .then(data => {
+    .then((res) => res.json())
+    .then((data) => {
         snippets = data;
         newGame();
     });
@@ -16,7 +16,7 @@ let typed = "";
 let gameActive = false;
 
 // Per-second tracking for the chart
-let wpmHistory = [];   // { sec, wpm, rawWpm, errors }
+let wpmHistory = []; // { sec, wpm, rawWpm, errors }
 let totalKeystrokes = 0;
 let totalErrors = 0;
 
@@ -75,27 +75,26 @@ function sampleWpm() {
     }
     const correct = typed.length - errors;
     const elapsedMin = elapsedSec / 60;
-    const wpm = elapsedMin > 0 ? Math.round((correct / 5) / elapsedMin) : 0;
-    const rawWpm = elapsedMin > 0 ? Math.round((typed.length / 5) / elapsedMin) : 0;
+    const wpm = elapsedMin > 0 ? Math.round(correct / 5 / elapsedMin) : 0;
+    const rawWpm = elapsedMin > 0 ? Math.round(typed.length / 5 / elapsedMin) : 0;
 
     wpmHistory.push({
         sec: Math.round(elapsedSec),
         wpm,
         rawWpm,
-        errors
+        errors,
     });
 }
 
 // ── Direct keyboard input handling ────────────────────
-document.addEventListener("keydown", e => {
+document.addEventListener("keydown", (e) => {
     if (!gameActive) return;
     const tag = document.activeElement?.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA") return;
 
     const code = currentSnippet.code;
 
-    if (["Tab", "Backspace", "Enter", " "].includes(e.key) ||
-        (e.key.length === 1 && !e.ctrlKey && !e.metaKey)) {
+    if (["Tab", "Backspace", "Enter", " "].includes(e.key) || (e.key.length === 1 && !e.ctrlKey && !e.metaKey)) {
         e.preventDefault();
     }
 
@@ -165,7 +164,7 @@ document.addEventListener("keydown", e => {
 function refreshStats(typed, errors) {
     const correctChars = typed.length - errors;
     const elapsed = startTime ? (Date.now() - startTime) / 60000 : 0;
-    const wpm = elapsed > 0 ? Math.round((correctChars / 5) / elapsed) : 0;
+    const wpm = elapsed > 0 ? Math.round(correctChars / 5 / elapsed) : 0;
     const accuracy = typed.length > 0 ? Math.round((correctChars / typed.length) * 100) : 100;
 
     document.getElementById("stat-wpm").textContent = wpm;
@@ -181,14 +180,14 @@ function finishGame(typed, errors) {
     const elapsed = (Date.now() - startTime) / 1000;
     const elapsedMin = elapsed / 60;
     const correctChars = typed.length - errors;
-    const wpm = elapsedMin > 0 ? Math.round((correctChars / 5) / elapsedMin) : 0;
-    const rawWpm = elapsedMin > 0 ? Math.round((totalKeystrokes / 5) / elapsedMin) : 0;
+    const wpm = elapsedMin > 0 ? Math.round(correctChars / 5 / elapsedMin) : 0;
+    const rawWpm = elapsedMin > 0 ? Math.round(totalKeystrokes / 5 / elapsedMin) : 0;
     const accuracy = typed.length > 0 ? Math.round((correctChars / typed.length) * 100) : 100;
 
     // Consistency = 100% − coefficient of variation of WPM samples
     let consistency = 0;
     if (wpmHistory.length > 1) {
-        const wpmVals = wpmHistory.map(s => s.wpm);
+        const wpmVals = wpmHistory.map((s) => s.wpm);
         const mean = wpmVals.reduce((a, b) => a + b, 0) / wpmVals.length;
         const variance = wpmVals.reduce((a, v) => a + (v - mean) ** 2, 0) / wpmVals.length;
         const sd = Math.sqrt(variance);
@@ -196,7 +195,10 @@ function finishGame(typed, errors) {
     }
 
     // Characters: correct / incorrect / extra / missed
-    let charCorrect = 0, charIncorrect = 0, charExtra = 0, charMissed = 0;
+    let charCorrect = 0,
+        charIncorrect = 0,
+        charExtra = 0,
+        charMissed = 0;
     const code = currentSnippet.code;
     for (let i = 0; i < Math.max(typed.length, code.length); i++) {
         if (i < typed.length && i < code.length) {
@@ -213,8 +215,7 @@ function finishGame(typed, errors) {
     document.getElementById("res-wpm").textContent = wpm;
     document.getElementById("res-acc").textContent = accuracy + "%";
     document.getElementById("res-raw").textContent = rawWpm;
-    document.getElementById("res-chars").textContent =
-        `${charCorrect}/${charIncorrect}/${charExtra}/${charMissed}`;
+    document.getElementById("res-chars").textContent = `${charCorrect}/${charIncorrect}/${charExtra}/${charMissed}`;
     document.getElementById("res-consistency").textContent = consistency + "%";
     document.getElementById("res-time").textContent = Math.round(elapsed) + "s";
     document.getElementById("res-lang").textContent = currentSnippet.language;
@@ -250,20 +251,29 @@ function drawChart() {
         return;
     }
 
-    const PAD_L = 40, PAD_R = 40, PAD_T = 18, PAD_B = 28;
+    const PAD_L = 40,
+        PAD_R = 40,
+        PAD_T = 18,
+        PAD_B = 28;
     const gw = W - PAD_L - PAD_R;
     const gh = H - PAD_T - PAD_B;
 
-    const wpmVals = wpmHistory.map(s => s.wpm);
-    const rawVals = wpmHistory.map(s => s.rawWpm);
-    const errVals = wpmHistory.map(s => s.errors);
+    const wpmVals = wpmHistory.map((s) => s.wpm);
+    const rawVals = wpmHistory.map((s) => s.rawWpm);
+    const errVals = wpmHistory.map((s) => s.errors);
     const maxWpm = Math.max(...wpmVals, ...rawVals, 10);
     const maxErr = Math.max(...errVals, 1);
     const timeMax = wpmHistory[wpmHistory.length - 1].sec || 1;
 
-    function xPos(sec) { return PAD_L + (sec / timeMax) * gw; }
-    function yWpm(v) { return PAD_T + gh - (v / maxWpm) * gh; }
-    function yErr(v) { return PAD_T + gh - (v / maxErr) * gh; }
+    function xPos(sec) {
+        return PAD_L + (sec / timeMax) * gw;
+    }
+    function yWpm(v) {
+        return PAD_T + gh - (v / maxWpm) * gh;
+    }
+    function yErr(v) {
+        return PAD_T + gh - (v / maxErr) * gh;
+    }
 
     // Grid lines + Y-axis labels (WPM)
     ctx.strokeStyle = "#2a2a2a";
@@ -343,7 +353,7 @@ function drawChart() {
     ctx.stroke();
 
     // Dots on WPM line
-    wpmHistory.forEach(s => {
+    wpmHistory.forEach((s) => {
         ctx.beginPath();
         ctx.arc(xPos(s.sec), yWpm(s.wpm), 3, 0, Math.PI * 2);
         ctx.fillStyle = "#4db8ff";
@@ -354,7 +364,7 @@ function drawChart() {
     ctx.fillStyle = "#ff6060";
     ctx.font = "bold 13px monospace";
     ctx.textAlign = "center";
-    wpmHistory.forEach(s => {
+    wpmHistory.forEach((s) => {
         if (s.errors > 0) {
             ctx.fillText("×", xPos(s.sec), yErr(s.errors) - 6);
         }
@@ -377,35 +387,31 @@ function submitGuess() {
     }
 }
 
-
 // ── Keyboard ──────────────────────────────────────────
 
 function charToKey(ch) {
-    if (ch === '\n') return 'Enter';
-    if (ch === '\t') return 'Tab';
+    if (ch === "\n") return "Enter";
+    if (ch === "\t") return "Tab";
     return ch.toLowerCase();
 }
 
 function updateNextKey() {
-    document.querySelectorAll('.key.next-key').forEach(k => k.classList.remove('next-key'));
+    document.querySelectorAll(".key.next-key").forEach((k) => k.classList.remove("next-key"));
 
     if (!currentSnippet) return;
     const nextChar = currentSnippet.code[typed.length];
     if (nextChar === undefined) return;
 
     const keyVal = charToKey(nextChar);
-    document.querySelectorAll(`.key[data-key="${CSS.escape(keyVal)}"]`)
-        .forEach(k => k.classList.add('next-key'));
+    document.querySelectorAll(`.key[data-key="${CSS.escape(keyVal)}"]`).forEach((k) => k.classList.add("next-key"));
 }
 
-window.addEventListener('keydown', e => {
-    const val = e.key === ' ' ? ' ' : e.key.length === 1 ? e.key.toLowerCase() : e.key;
-    document.querySelectorAll(`.key[data-key="${CSS.escape(val)}"]`)
-        .forEach(k => k.classList.add('pressed'));
+window.addEventListener("keydown", (e) => {
+    const val = e.key === " " ? " " : e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    document.querySelectorAll(`.key[data-key="${CSS.escape(val)}"]`).forEach((k) => k.classList.add("pressed"));
 });
 
-window.addEventListener('keyup', e => {
-    const val = e.key === ' ' ? ' ' : e.key.length === 1 ? e.key.toLowerCase() : e.key;
-    document.querySelectorAll(`.key[data-key="${CSS.escape(val)}"]`)
-        .forEach(k => k.classList.remove('pressed'));
+window.addEventListener("keyup", (e) => {
+    const val = e.key === " " ? " " : e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    document.querySelectorAll(`.key[data-key="${CSS.escape(val)}"]`).forEach((k) => k.classList.remove("pressed"));
 });

@@ -6,10 +6,23 @@ body {
     max-width: 900px;
     margin: 0 auto;
 }
-h2 { color: #fff; margin-bottom: 4px; text-align: center; }
-h3#room-info { color: #4db8ff; margin-bottom: 20px; text-align: center; }
-.hidden { display: none; }
-#game-screen p, #waiting-screen p { text-align: center; }
+h2 {
+    color: #fff;
+    margin-bottom: 4px;
+    text-align: center;
+}
+h3#room-info {
+    color: #4db8ff;
+    margin-bottom: 20px;
+    text-align: center;
+}
+.hidden {
+    display: none;
+}
+#game-screen p,
+#waiting-screen p {
+    text-align: center;
+}
 
 #players-list {
     background: #2a2a2a;
@@ -60,16 +73,25 @@ h3#room-info { color: #4db8ff; margin-bottom: 20px; text-align: center; }
     overflow-x: auto;
     margin-bottom: 10px;
 }
-.char-correct { color: #6bcf6b; }
-.char-wrong   { color: #ff6060; background: #3a1a1a; }
-.char-cursor  { background: #555; }
+.char-correct {
+    color: #6bcf6b;
+}
+.char-wrong {
+    color: #ff6060;
+    background: #3a1a1a;
+}
+.char-cursor {
+    background: #555;
+}
 
 #stats {
     font-size: 15px;
     margin-bottom: 8px;
     text-align: center;
 }
-#stats span { margin-right: 22px; }
+#stats span {
+    margin-right: 22px;
+}
 
 .buttons-row {
     text-align: center;
@@ -86,9 +108,13 @@ button {
     margin-top: 10px;
     border-radius: 4px;
 }
-button:hover { background: #2589c3; }
+button:hover {
+    background: #2589c3;
+}
 
-#result-screen { text-align: center; }
+#result-screen {
+    text-align: center;
+}
 
 #final-leaderboard {
     list-style: none;
@@ -109,9 +135,16 @@ button:hover { background: #2589c3; }
 #final-leaderboard li:last-child {
     border-bottom: none;
 }
-.rank-1 { color: #ffd700; font-weight: bold; }
-.rank-2 { color: #c0c0c0; }
-.rank-3 { color: #cd7f32; }
+.rank-1 {
+    color: #ffd700;
+    font-weight: bold;
+}
+.rank-2 {
+    color: #c0c0c0;
+}
+.rank-3 {
+    color: #cd7f32;
+}
 
 /* ── Keyboard ─────────────────────────────────── */
 #keyboard {
@@ -140,14 +173,23 @@ button:hover { background: #2589c3; }
     align-items: center;
     justify-content: center;
     cursor: default;
-    transition: background 0.05s, transform 0.05s, color 0.05s;
+    transition:
+        background 0.05s,
+        transform 0.05s,
+        color 0.05s;
     padding: 0 5px;
     box-sizing: border-box;
 }
 
-.key-wide      { min-width: 56px; }
-.key-extrawide { min-width: 72px; }
-.key-space     { min-width: 280px; }
+.key-wide {
+    min-width: 56px;
+}
+.key-extrawide {
+    min-width: 72px;
+}
+.key-space {
+    min-width: 280px;
+}
 
 .key.pressed {
     background: #1d6fa4;

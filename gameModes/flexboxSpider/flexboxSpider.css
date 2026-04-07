@@ -7,9 +7,18 @@ body {
     margin: 0 auto;
 }
 
-h2 { color: #fff; margin-bottom: 4px; text-align: center; }
-h3 { color: #fff; text-align: center; }
-.hidden { display: none; }
+h2 {
+    color: #fff;
+    margin-bottom: 4px;
+    text-align: center;
+}
+h3 {
+    color: #fff;
+    text-align: center;
+}
+.hidden {
+    display: none;
+}
 
 /* Level header */
 #level-header {
@@ -57,7 +66,8 @@ h3 { color: #fff; text-align: center; }
     transition: all 0.4s ease;
 }
 
-#spider, #target-web {
+#spider,
+#target-web {
     font-size: 40px;
     display: flex;
     align-items: center;
@@ -111,7 +121,9 @@ h3 { color: #fff; text-align: center; }
     outline: none;
     line-height: 1.8;
 }
-#css-input:focus { border-color: #888; }
+#css-input:focus {
+    border-color: #888;
+}
 
 /* Feedback */
 #feedback {
@@ -121,8 +133,12 @@ h3 { color: #fff; text-align: center; }
     margin-bottom: 6px;
     text-align: center;
 }
-#feedback.correct { color: #6bcf6b; }
-#feedback.wrong   { color: #ff6060; }
+#feedback.correct {
+    color: #6bcf6b;
+}
+#feedback.wrong {
+    color: #ff6060;
+}
 
 /* Buttons */
 button {
@@ -135,12 +151,16 @@ button {
     margin-right: 8px;
     margin-top: 10px;
 }
-button:hover { background: #2589c3; }
+button:hover {
+    background: #2589c3;
+}
 
 #next-btn {
     background: #2a8a3e;
 }
-#next-btn:hover { background: #33a84c; }
+#next-btn:hover {
+    background: #33a84c;
+}
 
 #action-buttons {
     text-align: center;
@@ -158,10 +178,14 @@ button:hover { background: #2589c3; }
     margin-top: 14px;
     font-size: 16px;
 }
-#result-box p { margin: 6px 0; }
+#result-box p {
+    margin: 6px 0;
+}
 
 .buttons-row {
     text-align: center;
 }
 
-a button { margin-top: 10px; }
+a button {
+    margin-top: 10px;
+}

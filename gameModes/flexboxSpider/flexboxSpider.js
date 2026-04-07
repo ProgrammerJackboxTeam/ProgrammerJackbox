@@ -2,25 +2,24 @@ let levels = [];
 let currentLevelIndex = 0;
 
 fetch("/flexboxSpider/levels.json")
-    .then(res => res.json())
-    .then(data => {
+    .then((res) => res.json())
+    .then((data) => {
         levels = data;
         loadLevel(0);
     });
 
 const webContainer = document.getElementById("web-container");
-const spiderEl     = document.getElementById("spider");
-const targetWebEl  = document.getElementById("target-web");
-const cssInput     = document.getElementById("css-input");
-const feedbackEl   = document.getElementById("feedback");
-const nextBtn      = document.getElementById("next-btn");
+const spiderEl = document.getElementById("spider");
+const targetWebEl = document.getElementById("target-web");
+const cssInput = document.getElementById("css-input");
+const feedbackEl = document.getElementById("feedback");
+const nextBtn = document.getElementById("next-btn");
 
 function loadLevel(index) {
     currentLevelIndex = index;
     const lvl = levels[index];
 
-    document.getElementById("level-label").textContent =
-        `Level ${index + 1} / ${levels.length}`;
+    document.getElementById("level-label").textContent = `Level ${index + 1} / ${levels.length}`;
     document.getElementById("level-desc").textContent = lvl.description;
     document.getElementById("level-hint").textContent = "💡 Hint: " + lvl.hint;
 
@@ -78,17 +77,14 @@ function applyCSS() {
 
     // Check correctness: look for the expected property/value pair
     const expectedProp = camelCase(lvl.property);
-    const expectedVal  = lvl.answer.trim().toLowerCase();
-    const appliedVal   = (parsed[expectedProp] || "").trim().toLowerCase();
+    const expectedVal = lvl.answer.trim().toLowerCase();
+    const appliedVal = (parsed[expectedProp] || "").trim().toLowerCase();
 
     if (appliedVal === expectedVal) {
         showFeedback("✅ Correct! The spider found its web!", "correct");
         nextBtn.classList.remove("hidden");
     } else {
-        showFeedback(
-            `❌ Not quite. Try: ${lvl.property}: ${lvl.answer};`,
-            "wrong"
-        );
+        showFeedback(`❌ Not quite. Try: ${lvl.property}: ${lvl.answer};`, "wrong");
     }
 }
 
@@ -101,8 +97,7 @@ function nextLevel() {
 }
 
 function finishGame() {
-    document.getElementById("res-levels").textContent =
-        levels.length + " / " + levels.length;
+    document.getElementById("res-levels").textContent = levels.length + " / " + levels.length;
     document.getElementById("game-screen").classList.add("hidden");
     document.getElementById("result-screen").classList.remove("hidden");
 }
@@ -115,7 +110,7 @@ function restartGame() {
 
 function showFeedback(msg, type) {
     feedbackEl.textContent = msg;
-    feedbackEl.className = type;   // "correct" or "wrong"
+    feedbackEl.className = type; // "correct" or "wrong"
     feedbackEl.classList.remove("hidden");
 }
 
@@ -127,12 +122,15 @@ function hideFeedback() {
 // Parse "prop: value; prop2: value2;" into a camelCase object
 function parseCSS(text) {
     const result = {};
-    const declarations = text.split(";").map(s => s.trim()).filter(Boolean);
+    const declarations = text
+        .split(";")
+        .map((s) => s.trim())
+        .filter(Boolean);
     for (const decl of declarations) {
         const colonIdx = decl.indexOf(":");
         if (colonIdx === -1) continue;
         const prop = decl.slice(0, colonIdx).trim();
-        const val  = decl.slice(colonIdx + 1).trim();
+        const val = decl.slice(colonIdx + 1).trim();
         if (prop && val) {
             result[camelCase(prop)] = val;
         }
@@ -146,7 +144,7 @@ function camelCase(str) {
 }
 
 // Allow Enter key in textarea to trigger Apply
-cssInput.addEventListener("keydown", e => {
+cssInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         applyCSS();

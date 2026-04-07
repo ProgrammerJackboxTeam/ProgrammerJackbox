@@ -6,9 +6,17 @@ body {
     max-width: 900px;
     margin: 0 auto;
 }
-h2 { color: #fff; margin-bottom: 4px; text-align: center; }
-.hidden { display: none; }
-#game-screen p { text-align: center; }
+h2 {
+    color: #fff;
+    margin-bottom: 4px;
+    text-align: center;
+}
+.hidden {
+    display: none;
+}
+#game-screen p {
+    text-align: center;
+}
 
 #code-display {
     background: #2a2a2a;
@@ -20,16 +28,25 @@ h2 { color: #fff; margin-bottom: 4px; text-align: center; }
     overflow-x: auto;
     margin-bottom: 10px;
 }
-.char-correct { color: #6bcf6b; }
-.char-wrong   { color: #ff6060; background: #3a1a1a; }
-.char-cursor  { background: #555; }
+.char-correct {
+    color: #6bcf6b;
+}
+.char-wrong {
+    color: #ff6060;
+    background: #3a1a1a;
+}
+.char-cursor {
+    background: #555;
+}
 
 #stats {
     font-size: 15px;
     margin-bottom: 8px;
     text-align: center;
 }
-#stats span { margin-right: 22px; }
+#stats span {
+    margin-right: 22px;
+}
 
 .buttons-row {
     text-align: center;
@@ -45,9 +62,13 @@ button {
     margin-right: 8px;
     margin-top: 10px;
 }
-button:hover { background: #2589c3; }
+button:hover {
+    background: #2589c3;
+}
 
-#result-screen { text-align: left; }
+#result-screen {
+    text-align: left;
+}
 
 /* ── Top: big stats + chart side-by-side ── */
 #result-top {
@@ -122,7 +143,10 @@ button:hover { background: #2589c3; }
     color: #4db8ff;
 }
 
-#lang-guess-section { margin-top: 14px; text-align: center; }
+#lang-guess-section {
+    margin-top: 14px;
+    text-align: center;
+}
 #lang-guess-input {
     font-size: 14px;
     padding: 4px 8px;
@@ -130,9 +154,15 @@ button:hover { background: #2589c3; }
     color: #ccc;
     border: 1px solid #555;
 }
-#guess-result { margin-top: 8px; font-weight: bold; font-size: 15px; }
+#guess-result {
+    margin-top: 8px;
+    font-weight: bold;
+    font-size: 15px;
+}
 
-a button { margin-top: 10px; }
+a button {
+    margin-top: 10px;
+}
 
 /* ── Keyboard ─────────────────────────────────── */
 #keyboard {
@@ -161,14 +191,23 @@ a button { margin-top: 10px; }
     align-items: center;
     justify-content: center;
     cursor: default;
-    transition: background 0.05s, transform 0.05s, color 0.05s;
+    transition:
+        background 0.05s,
+        transform 0.05s,
+        color 0.05s;
     padding: 0 5px;
     box-sizing: border-box;
 }
 
-.key-wide      { min-width: 56px; }
-.key-extrawide { min-width: 72px; }
-.key-space     { min-width: 280px; }
+.key-wide {
+    min-width: 56px;
+}
+.key-extrawide {
+    min-width: 72px;
+}
+.key-space {
+    min-width: 280px;
+}
 
 /* Key is physically pressed */
 .key.pressed {
