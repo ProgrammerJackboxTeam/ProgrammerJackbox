@@ -161,7 +161,7 @@ socket.on("update-players", payload => {
     updateGamemodeOptions(lastPlayerCount);
 
     const selectGameButton = document.getElementById("selectGameButton");
-    if (isHost && players.length > 2 && currentLobbyVisibility !== "public") {
+    if (isHost && players.length >= 2 && currentLobbyVisibility !== "public") {
         selectGameButton.classList.remove("hidden");
     } else {
         selectGameButton.classList.add("hidden");
@@ -181,11 +181,22 @@ socket.on("gamemode-selected", gameMode => {
     }
 
     const bugFixerArea = document.getElementById("bugFixerArea");
+    const codeTyperLobbyControls = document.getElementById("codeTyperLobbyControls");
+
     if (gameMode === "bugFixerGame") {
         bugFixerArea.classList.remove("hidden");
+        codeTyperLobbyControls.classList.add("hidden");
         renderBugFixerControls();
+    } else if (gameMode === "codeTyperMultiplayer") {
+        bugFixerArea.classList.add("hidden");
+        codeTyperLobbyControls.classList.remove("hidden");
+        const startCodeTyperButton = document.getElementById("startCodeTyperButton");
+        startCodeTyperButton.classList.toggle("hidden", !isHost);
+        bugFixerState = null;
+        bugFixerSelectedCards = [];
     } else {
         bugFixerArea.classList.add("hidden");
+        codeTyperLobbyControls.classList.add("hidden");
         bugFixerState = null;
         bugFixerSelectedCards = [];
     }
@@ -249,6 +260,16 @@ function startBugFixerGame() {
         submissionSeconds,
         deciderSeconds,
         deciderTimeoutAction: deciderTimeoutAction.value === "lowest-score" ? "lowest-score" : "no-point"
+    });
+}
+
+function startCodeTyperGame() {
+    if (!currentRoomCode || selectedGameMode !== "codeTyperMultiplayer") {
+        return;
+    }
+
+    socket.emit("start-codetyper-multiplayer", {
+        roomCode: currentRoomCode
     });
 }
 
@@ -478,6 +499,12 @@ socket.on("bugfixer-error", message => {
     alert(message);
 });
 
+socket.on("launch-codetyper", ({ roomCode }) => {
+    const iframe = document.getElementById("codeTyperIframe");
+    iframe.src = `/codeTyperMultiplayer/?roomCode=${roomCode}&name=${encodeURIComponent(playerName)}&isHost=${isHost}&t=${Date.now()}`;
+    document.getElementById("codeTyperArea").classList.remove("hidden");
+});
+
 socket.on("game-terminated", payload => {
     selectedGameMode = "";
     bugFixerState = null;
@@ -485,6 +512,10 @@ socket.on("game-terminated", payload => {
 
     document.getElementById("selectedGameDisplay").classList.add("hidden");
     document.getElementById("bugFixerArea").classList.add("hidden");
+    document.getElementById("codeTyperLobbyControls").classList.add("hidden");
+    document.getElementById("codeTyperArea").classList.add("hidden");
+    const iframe = document.getElementById("codeTyperIframe");
+    if(iframe) iframe.src = "";
     renderTerminationControls();
 
     if (payload && payload.gameMode) {

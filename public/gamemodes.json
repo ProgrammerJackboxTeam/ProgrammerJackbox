@@ -5,6 +5,11 @@
         "minPlayers": 3
     },
     {
+        "name": "codeTyperMultiplayer",
+        "description": "Race against opponents to type code snippets the fastest.",
+        "minPlayers": 2
+    },
+    {
         "name": "LogicCAH",
         "description": "Logic-based card prompts with a twist.",
         "minPlayers": 4

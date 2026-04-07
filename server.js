@@ -11,6 +11,7 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 app.use("/codeTyper", express.static("gameModes/codeTyper"));
+app.use("/codeTyperMultiplayer", express.static("gameModes/codeTyperMultiplayer"));
 app.use("/flexboxSpider", express.static("gameModes/flexboxSpider"));
 
 const BUG_FIXER_MIN_PLAYERS = 3;
@@ -959,9 +960,61 @@ io.on("connection", socket => {
         });
     });
 
+    socket.on("start-codetyper-multiplayer", payload => {
+        const roomCode = payload && payload.roomCode;
+        const room = rooms[roomCode];
+        if (!room || room.host !== socket.id || room.selectedGame !== "codeTyperMultiplayer") {
+            return;
+        }
+        
+        io.to(roomCode).emit("launch-codetyper", { roomCode });
+    });
+
+    socket.on("codetyper-rejoin-room", ({ roomCode, name }) => {
+        const room = rooms[roomCode];
+        if (!room) return;
+        socket.join(roomCode);
+        if (!room.codeTyperMultiplayer) {
+            room.codeTyperMultiplayer = { players: {} };
+        }
+        room.codeTyperMultiplayer.players[socket.id] = { name, isFinished: false, progress: 0, wpm: 0 };
+    });
+
+    socket.on("codetyper-progress", ({ roomCode, progress, wpm }) => {
+        const room = rooms[roomCode];
+        if (!room || !room.codeTyperMultiplayer || !room.codeTyperMultiplayer.players[socket.id]) {
+            return;
+        }
+        room.codeTyperMultiplayer.players[socket.id].progress = progress;
+        room.codeTyperMultiplayer.players[socket.id].wpm = wpm;
+        io.to(roomCode).emit("codetyper-progress-update", room.codeTyperMultiplayer.players);
+    });
+
+    socket.on("codetyper-finished", ({ roomCode, time }) => {
+        const room = rooms[roomCode];
+        if (!room || !room.codeTyperMultiplayer || !room.codeTyperMultiplayer.players[socket.id]) {
+            return;
+        }
+        room.codeTyperMultiplayer.players[socket.id].isFinished = true;
+        room.codeTyperMultiplayer.players[socket.id].time = time;
+        io.to(roomCode).emit("codetyper-progress-update", room.codeTyperMultiplayer.players);
+    });
+
+    socket.on("codetyper-sync-snippet", ({ roomCode, snippet }) => {
+        const room = rooms[roomCode];
+        if (!room) return;
+        io.to(roomCode).emit("codetyper-set-snippet", snippet);
+    });
+
     socket.on("disconnect", () => {
         for (const code in rooms) {
             const room = rooms[code];
+
+            if (room.codeTyperMultiplayer && room.codeTyperMultiplayer.players[socket.id]) {
+                delete room.codeTyperMultiplayer.players[socket.id];
+                io.to(code).emit("codetyper-progress-update", room.codeTyperMultiplayer.players);
+            }
+
             const index = room.players.findIndex(p => p.id === socket.id);
 
             if (index !== -1) {
