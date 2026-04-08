@@ -15,10 +15,10 @@ app.use(express.static("public"));
 app.use("/codeTyper", express.static("gameModes/codeTyper"));
 app.use("/flexboxSpider", express.static("gameModes/flexboxSpider"));
 
-const rooms = {}; // { ROOMCODE: { host: socket.id, players: [], gameMode: null, game: null, gameState: "LOBBY" } }
 const BUG_FIXER_MIN_PLAYERS = 3;
 const BUG_FIXER_HAND_SIZE = 5;
 const BUG_FIXER_FINALIZE_DELAY_MS = 10000;
+const MAX_PLAYERS = 8;
 
 function normalizeName(name) {
     return String(name || "").trim().toLowerCase();
@@ -809,8 +809,14 @@ io.on("connection", socket => {
             return;
         }
 
+        if (room.players.length >= MAX_PLAYERS) {
+            socket.emit("join-error", `This lobby is full (max ${MAX_PLAYERS} players).`);
+            return;
+        }
+
         room.players.push({ id: socket.id, name: String(name).trim() });
         socket.join(roomCode);
+        socket.emit("room-joined", { roomCode, hostId: room.host });
 
         emitRoomUpdate(roomCode);
 
@@ -1118,6 +1124,26 @@ io.on("connection", socket => {
         } catch (e) {
             socket.emit("error", e.message);
         }
+    });
+
+    socket.on("host-entering-gamehub", ({ roomCode }) => {
+        const room = rooms[roomCode];
+        if (!room || room.host !== socket.id) return;
+        socket.to(roomCode).emit("host-selecting-game");
+    });
+
+    socket.on("host-left-gamehub", ({ roomCode }) => {
+        const room = rooms[roomCode];
+        if (!room || room.host !== socket.id) return;
+        socket.to(roomCode).emit("host-left-gamehub");
+    });
+
+    socket.on("launch-redirect-game", ({ roomCode, url }) => {
+        const room = rooms[roomCode];
+        if (!room || room.host !== socket.id) return;
+        const allowed = ["/codeTyper/", "/flexboxSpider/"];
+        if (!allowed.includes(url)) return;
+        socket.to(roomCode).emit("redirect-to-game", { url });
     });
 
     socket.on("disconnect", () => {

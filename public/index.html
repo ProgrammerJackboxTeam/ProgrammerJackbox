@@ -16,7 +16,7 @@
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             padding: 20px;
         }
 
@@ -25,8 +25,9 @@
             border-radius: 15px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             padding: 40px;
-            max-width: 600px;
+            max-width: 650px;
             width: 100%;
+            margin-top: 20px;
         }
 
         .hidden {
@@ -46,6 +47,11 @@
             font-size: 16px;
             width: 100%;
             font-family: Arial, sans-serif;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
         }
 
         button {
@@ -89,6 +95,7 @@
             text-align: center;
             margin: 20px 0;
             font-family: monospace;
+            letter-spacing: 4px;
         }
 
         .game-settings {
@@ -162,27 +169,60 @@
             border-bottom: 1px solid #ddd;
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        body {
-            font-family: Arial;
-            padding: 20px;
+        /* Game Hub card grid */
+        .game-mode-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin: 20px 0;
         }
 
-        .hidden {
-            display: none;
+        .game-card {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 14px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
         }
 
-        table {
-            border-collapse: collapse;
-            margin-top: 10px;
+        .game-card:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
         }
 
-        td,
-        th {
-            border: 1px solid #ccc;
-            padding: 6px 12px;
+        .game-card.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .game-card.unavailable {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .game-card .game-icon {
+            font-size: 30px;
+            margin-bottom: 6px;
+        }
+
+        .game-card .game-name {
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .game-card .game-desc {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .game-card .game-min {
+            font-size: 11px;
+            margin-top: 6px;
+            opacity: 0.7;
         }
 
         #gameSelectArea {
@@ -194,182 +234,32 @@
 <body>
 
 <div class="container">
+
     <!-- Name Entry -->
     <div id="nameEntry">
         <h1>🎮 Programmer Jackbox</h1>
         <p>Enter your name to continue:</p>
-        <input id="nameInput" type="text" placeholder="Your name">
+        <input id="nameInput" type="text" placeholder="Your name" maxlength="20">
         <button onclick="submitName()">Continue</button>
     </div>
 
     <!-- Main Menu -->
-    <div id="mainMenu" class="hidden">
-        <h2>Main Menu</h2>
-        <button onclick="hostLobby()">Host a Game</button>
-        <button onclick="showJoin()">Join a Game</button>
-    </div>
-
-    <!-- Join Section -->
-    <div id="joinSection" class="hidden">
-        <h3>Join Game</h3>
-        <input id="joinCode" type="text" placeholder="Room code" maxlength="6">
-        <button onclick="joinLobby()">Join</button>
-        <button onclick="back()">Back</button>
-    </div>
-
-    <!-- Lobby (Host) -->
-    <div id="hostLobby" class="hidden">
-        <h2>Hosting Game</h2>
-        <p>Share this code with others:</p>
-        <div class="room-code" id="roomKey"></div>
-
-        <h3>Players in lobby:</h3>
-        <table id="playerTable">
-            <tr><th>Name</th></tr>
-        </table>
-
-        <div id="gameSettings" class="hidden game-settings">
-            <h3>Game Settings</h3>
-            <label>Game Mode:</label>
-            <select id="gameModeSelect" onchange="updateSettings()">
-                <option value="LogicCAH">LogicCAH - Logic Cards</option>
-                <option value="ProgrammerProphunt">ProgrammerProphunt - Code Hunt</option>
-            </select>
-
-            <label>Number of Rounds:</label>
-            <select id="numRounds">
-                <option value="1">1 Round</option>
-                <option value="2" selected>2 Rounds</option>
-                <option value="3">3 Rounds</option>
-                <option value="5">5 Rounds</option>
-            </select>
-
-            <label>Time Limit (seconds):</label>
-            <input type="number" id="timeLimit" value="30" min="10" max="300">
-
-            <div id="logiccahSettings">
-                <label>Number of Prompts:</label>
-                <input type="number" id="numPrompts" value="2" min="1" max="5">
-            </div>
-
-            <div id="prophuntSettings" class="hidden">
-                <label>Code Complexity:</label>
-                <select id="complexity">
-                    <option value="easy">Easy</option>
-                    <option value="medium" selected>Medium</option>
-                    <option value="hard">Hard</option>
-                </select>
-            </div>
-
-            <button onclick="startGame()" disabled id="startGameBtn">Start Game (Need 2+ players)</button>
-        </div>
-
-        <div class="button-group">
-            <button onclick="toggleSettings()">Game Settings</button>
-            <button onclick="back()">Close Lobby</button>
-        </div>
-    </div>
-
-    <!-- Lobby (Joined) -->
-    <div id="joinedLobby" class="hidden">
-        <h2>Waiting for Host to Start</h2>
-        <p>Players in lobby:</p>
-        <table id="joinedPlayerTable">
-            <tr><th>Name</th></tr>
-        </table>
-        <button onclick="back()">Leave</button>
-    </div>
-
-    <!-- LogicCAH Game -->
-    <div id="logiccahGame" class="hidden">
-        <h2>LogicCAH - Answer the Logic Prompts</h2>
-        <div class="status" id="gameStatus"></div>
-
-        <div id="answerPhase" class="hidden">
-            <h3>Answer the prompts</h3>
-            <div id="promptsContainer"></div>
-            <button onclick="submitLogiccahAnswers()">Submit Answers</button>
-        </div>
-
-        <div id="deciderPhase" class="hidden">
-            <h3>You are the Decider!</h3>
-            <p>Choose which answers make the most sense:</p>
-            <div id="answersContainer"></div>
-        </div>
-
-        <div id="waitingPhase" class="hidden">
-            <p>⏳ Waiting for other players...</p>
-        </div>
-
-        <div id="resultsPhase" class="hidden">
-            <h3>Round Results</h3>
-            <div id="resultsDisplay"></div>
-        </div>
-
-        <div id="gameOverPhase" class="hidden">
-            <h3>🎉 Game Over!</h3>
-            <div id="finalScores" class="scores"></div>
-            <button onclick="back()">Back to Menu</button>
-        </div>
-    </div>
-
-    <!-- ProgrammerProphunt Game -->
-    <div id="prophuntGame" class="hidden">
-        <h2>ProgrammerProphunt - Hide Your Code</h2>
-        <div class="status" id="prophuntStatus"></div>
-
-        <div id="hiderPhase" class="hidden">
-            <h3>👻 You are a Hider!</h3>
-            <p>Add a line of code to the block:</p>
-            <textarea id="codeInput" placeholder="Enter a line of code"></textarea>
-            <button onclick="submitHiderLine()">Submit</button>
-        </div>
-
-        <div id="finderPhase" class="hidden">
-            <h3>🔍 You are a Finder!</h3>
-            <p>Which line looks suspicious?</p>
-            <div class="code-block" id="codeDisplay"></div>
-            <div id="lineSelectContainer"></div>
-            <button onclick="submitFinderSelection()">Submit Selection</button>
-        </div>
-
-        <div id="prophuntWaitingPhase" class="hidden">
-            <p>⏳ Waiting for other players...</p>
-        </div>
-
-        <div id="prophuntResultsPhase" class="hidden">
-            <h3>Round Results</h3>
-            <div id="prophuntResultsDisplay"></div>
-        </div>
-
-        <div id="prophuntGameOverPhase" class="hidden">
-            <h3>🎉 Game Over!</h3>
-            <div id="prophuntFinalScores" class="scores"></div>
-            <button onclick="back()">Back to Menu</button>
-        </div>
-    </div>
-</div>
-    <h2>Enter Your Name</h2>
-    <input id="nameInput" type="text" placeholder="Your name">
-    <button onclick="submitName()">Continue</button>
-
     <div id="menu" class="hidden">
         <h2>Main Menu</h2>
         <button onclick="hostPrivateLobby()">Host Private Lobby</button>
         <button onclick="joinRandomLobby()">Join Random Public Lobby</button>
         <button onclick="showJoin()">Join Private Lobby by Code</button>
-        <hr>
-        <button onclick="window.location.href='/codeTyper/'">Play Code Typer (Solo)</button>
-        <button onclick="window.location.href='/flexboxSpider/'">Play Flexbox Spider (Solo)</button>
     </div>
 
+    <!-- Join by Code -->
     <div id="joinSection" class="hidden">
         <h3>Join Private Lobby</h3>
-        <input id="joinCode" type="text" placeholder="Room code">
+        <input id="joinCode" type="text" placeholder="Room code (6 characters)" maxlength="6">
         <button onclick="joinLobby()">Join</button>
-        <button onclick="back()">Back</button>
+        <button onclick="backToMenu()">Back</button>
     </div>
 
+    <!-- Random Join -->
     <div id="randomJoinSection" class="hidden">
         <h3>Join Random Public Lobby</h3>
         <p>Pick one or more games you want to play:</p>
@@ -378,32 +268,32 @@
         <button onclick="backToMenu()">Back</button>
     </div>
 
+    <!-- Lobby — shared by host and joined players -->
     <div id="hostSection" class="hidden">
-        <h3>Hosting Lobby</h3>
+        <h3 id="lobbySectionTitle">Lobby</h3>
         <p>Lobby type: <strong id="lobbyTypeLabel">Private</strong></p>
-        <p>Your room code:</p>
-        <h2 id="roomKey"></h2>
+
+        <div id="roomCodeArea">
+            <p>Share this code with others:</p>
+            <div class="room-code" id="roomKey"></div>
+        </div>
 
         <h3>Players:</h3>
         <table id="playerTable">
-            <tr>
-                <th>Name</th>
-            </tr>
+            <tr><th>Name</th></tr>
         </table>
 
+        <p id="lobbyStatusMsg" class="status hidden"></p>
+
         <button id="selectGameButton" class="hidden" onclick="showGameSelect()">Select a Game</button>
-        <div id="gameSelectArea" class="hidden">
-            <label for="gameSelect">Game mode:</label>
-            <select id="gameSelect"></select>
-            <button onclick="confirmGameSelect()">Confirm</button>
-            <p id="gameDetails"></p>
-        </div>
+
         <p id="selectedGameDisplay" class="hidden"></p>
         <button id="terminateGameButton" class="hidden" onclick="terminateCurrentGame()">Terminate Current Game</button>
 
         <div id="bugFixerArea" class="hidden">
             <h3>Bug Fixer</h3>
             <p id="bugFixerStatus">Waiting to start.</p>
+
             <label for="bugFixerPointsToWinInput">Points to win:</label>
             <input id="bugFixerPointsToWinInput" type="number" min="1" value="5">
 
@@ -430,8 +320,7 @@
                 <div id="bugFixerHand"></div>
                 <h4>Selected In Order</h4>
                 <div id="bugFixerSelectedOrder"></div>
-                <button id="bugFixerSubmitButton" class="hidden" onclick="submitBugFixerCards()">Submit Selected
-                    Card(s)</button>
+                <button id="bugFixerSubmitButton" class="hidden" onclick="submitBugFixerCards()">Submit Selected Card(s)</button>
             </div>
 
             <div id="bugFixerJudgeArea" class="hidden">
@@ -446,8 +335,39 @@
             <ul id="bugFixerRevealList"></ul>
         </div>
 
-        <button onclick="back()">Close Lobby</button>
+        <div id="gameSelectArea" class="hidden">
+            <label for="gameSelect">Game mode:</label>
+            <select id="gameSelect"></select>
+            <button onclick="confirmGameSelect()">Confirm</button>
+            <p id="gameDetails"></p>
+        </div>
+
+        <button onclick="back()" style="margin-top: 10px;">Leave Lobby</button>
     </div>
+
+    <!-- Game Hub — Host picks game mode -->
+    <div id="gameHub" class="hidden">
+        <h2>Choose a Game</h2>
+        <p id="gameHubPlayerCount"></p>
+        <div id="gameModeCards" class="game-mode-cards"></div>
+        <div id="gameHubSettings" class="hidden game-settings"></div>
+        <div class="button-group">
+            <button id="gameHubStartBtn" class="hidden" onclick="launchSelectedGame()">Launch Game</button>
+            <button onclick="backToLobby()">Back to Lobby</button>
+        </div>
+    </div>
+
+    <!-- Game Hub Waiting — shown to non-host players while host picks -->
+    <div id="gameHubWaiting" class="hidden">
+        <h2>Waiting for Host</h2>
+        <p id="gameHubWaitingMsg">The host is selecting a game...</p>
+        <h3>Players in lobby:</h3>
+        <table id="waitingPlayerTable">
+            <tr><th>Name</th></tr>
+        </table>
+    </div>
+
+</div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="client.js"></script>
