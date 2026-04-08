@@ -962,6 +962,7 @@ io.on("connection", socket => {
         }
         room.selectedGame = null;
         room.bugFixer = null;
+        room.codeTyperMultiplayer = null;
 
         io.to(roomCode).emit("game-terminated", {
             gameMode: terminatedGame,

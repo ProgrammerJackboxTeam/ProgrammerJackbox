@@ -9,8 +9,10 @@
     },
     {
         "name": "codeTyperMultiplayer",
+        "displayName": "Code Typer (Versus)",
         "description": "Race against opponents to type code snippets the fastest.",
-        "minPlayers": 2
+        "minPlayers": 2,
+        "icon": "⚔️"
     },
     {
         "name": "LogicCAH",

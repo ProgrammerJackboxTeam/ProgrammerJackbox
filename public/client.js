@@ -323,6 +323,12 @@ function renderGameHubSettings(mode) {
                 <option value="medium" selected>Medium</option>
                 <option value="hard">Hard</option>
             </select>`;
+    } else if (mode.name === "codeTyperMultiplayer") {
+        area.innerHTML = `
+            <h3>Code Typer Multiplayer Settings</h3>
+            <p>Race against others to type the snippet the fastest.</p>`;
+    } else {
+        area.innerHTML = "";
     }
 }
 
@@ -338,6 +344,8 @@ function launchSelectedGame() {
 
     if (mode.name === "bugFixerGame") {
         startBugFixerGame();
+    } else if (mode.name === "codeTyperMultiplayer") {
+        startCodeTyperGame();
     } else {
         const numRounds = parseInt(document.getElementById("numRounds").value);
         const timeLimit = parseInt(document.getElementById("timeLimit").value);
@@ -735,6 +743,11 @@ socket.on("game-terminated", payload => {
 
     document.getElementById("selectedGameDisplay").classList.add("hidden");
     document.getElementById("bugFixerArea").classList.add("hidden");
+    
+    document.getElementById("codeTyperArea").classList.add("hidden");
+    const codeTyperLobbyControls = document.getElementById("codeTyperLobbyControls");
+    if (codeTyperLobbyControls) codeTyperLobbyControls.classList.add("hidden");
+
     renderTerminationControls();
 
     if (payload && payload.gameMode) {
