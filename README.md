@@ -23,14 +23,14 @@ Players join a shared room by code; one player hosts, others join by room code.
 - Player list sync using `update-players` event.
 - Host can start game with custom settings (rounds/time limit/complexity/prompts).
 - LogicCAH flow:
-  - players submit answers
-  - decider picks best answer
-  - selected player gets points
-  - round progression and game over state.
+    - players submit answers
+    - decider picks best answer
+    - selected player gets points
+    - round progression and game over state.
 - ProgrammerProphunt flow:
-  - hiders submit code lines
-  - finders select hidden line
-  - scoring and round progression.
+    - hiders submit code lines
+    - finders select hidden line
+    - scoring and round progression.
 - Graceful disconnect handling with player removal and room cleanup.
 
 ## Network Accessibility
@@ -52,7 +52,6 @@ Players join a shared room by code; one player hosts, others join by room code.
 npm install
 node server.js
 ```
-
 
 1. Confirmed `server.js` behavior and room/join logic.
 2. Updated server binding to `0.0.0.0` (external LAN available).

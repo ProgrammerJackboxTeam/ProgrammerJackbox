@@ -16,7 +16,7 @@ class ProgrammerProphunt {
         this.splitTeams();
 
         this.scores = {};
-        this.players.forEach(p => {
+        this.players.forEach((p) => {
             this.scores[p.id] = 0;
         });
 
@@ -35,7 +35,7 @@ class ProgrammerProphunt {
     splitTeams() {
         const shuffled = [...this.players].sort(() => Math.random() - 0.5);
         const midpoint = Math.ceil(shuffled.length / 2);
-        
+
         this.team1 = shuffled.slice(0, midpoint);
         this.team2 = shuffled.slice(midpoint);
     }
@@ -47,7 +47,7 @@ class ProgrammerProphunt {
         const templates = {
             easy: `function sum(a, b) {\n    return a + b;\n}`,
             medium: `function fibonacci(n) {\n    if (n <= 1) return n;\n    return fibonacci(n - 1) + fibonacci(n - 2);\n}`,
-            hard: `class DataProcessor {\n    constructor(data) {\n        this.data = data.filter(x => x !== null);\n    }\n    process() {\n        return this.data.map(x => x * 2).reduce((a, b) => a + b, 0);\n    }\n}`
+            hard: `class DataProcessor {\n    constructor(data) {\n        this.data = data.filter(x => x !== null);\n    }\n    process() {\n        return this.data.map(x => x * 2).reduce((a, b) => a + b, 0);\n    }\n}`,
         };
         return templates[this.complexity] || templates.medium;
     }
@@ -71,7 +71,7 @@ class ProgrammerProphunt {
      */
     allHidersSubmitted() {
         const hidingTeam = this.getHidingTeam();
-        return hidingTeam.every(player => this.hiderLines[player.id]);
+        return hidingTeam.every((player) => this.hiderLines[player.id]);
     }
 
     /**
@@ -79,7 +79,7 @@ class ProgrammerProphunt {
      */
     allFindersSubmitted() {
         const findingTeam = this.getFindingTeam();
-        return findingTeam.every(player => this.finderSelections[player.id]);
+        return findingTeam.every((player) => this.finderSelections[player.id]);
     }
 
     /**
@@ -93,7 +93,7 @@ class ProgrammerProphunt {
         }
 
         const hidingTeam = this.getHidingTeam();
-        const player = hidingTeam.find(p => p.id === playerId);
+        const player = hidingTeam.find((p) => p.id === playerId);
         if (!player) {
             throw new Error("Player is not on the hiding team");
         }
@@ -116,7 +116,7 @@ class ProgrammerProphunt {
 
         return {
             success: true,
-            allSubmitted: this.allHidersSubmitted()
+            allSubmitted: this.allHidersSubmitted(),
         };
     }
 
@@ -125,7 +125,7 @@ class ProgrammerProphunt {
      */
     updateCodeBlock() {
         const hidingTeam = this.getHidingTeam();
-        const newLines = hidingTeam.map(player => this.hiderLines[player.id]);
+        const newLines = hidingTeam.map((player) => this.hiderLines[player.id]);
         this.codeBlock += "\n" + newLines.join("\n");
     }
 
@@ -148,9 +148,9 @@ class ProgrammerProphunt {
         }
 
         const hidingTeam = this.getHidingTeam();
-        return hidingTeam.map(player => ({
+        return hidingTeam.map((player) => ({
             hiderId: player.id,
-            lineNumber: Object.keys(this.hiderLines).indexOf(player.id) + 1
+            lineNumber: Object.keys(this.hiderLines).indexOf(player.id) + 1,
         }));
     }
 
@@ -165,7 +165,7 @@ class ProgrammerProphunt {
         }
 
         const findingTeam = this.getFindingTeam();
-        const finder = findingTeam.find(p => p.id === finderId);
+        const finder = findingTeam.find((p) => p.id === finderId);
         if (!finder) {
             throw new Error("Player is not on the finding team");
         }
@@ -175,7 +175,7 @@ class ProgrammerProphunt {
         }
 
         const hidingTeam = this.getHidingTeam();
-        if (!hidingTeam.find(p => p.id === selectedHiderId)) {
+        if (!hidingTeam.find((p) => p.id === selectedHiderId)) {
             throw new Error("Selected player is not on the hiding team");
         }
 
@@ -189,7 +189,7 @@ class ProgrammerProphunt {
 
         return {
             success: true,
-            allSubmitted: this.allFindersSubmitted()
+            allSubmitted: this.allFindersSubmitted(),
         };
     }
 
@@ -205,13 +205,13 @@ class ProgrammerProphunt {
         const correctCount = correctIdentifications.size;
 
         // Finders get a point for each correctly identified hider
-        findingTeam.forEach(finder => {
+        findingTeam.forEach((finder) => {
             this.scores[finder.id] += correctCount;
         });
 
         // Hiders get a point for each team member NOT identified
-        const notIdentified = hidingTeam.filter(hider => !correctIdentifications.has(hider.id));
-        notIdentified.forEach(hider => {
+        const notIdentified = hidingTeam.filter((hider) => !correctIdentifications.has(hider.id));
+        notIdentified.forEach((hider) => {
             this.scores[hider.id] += 1;
         });
 
@@ -219,7 +219,7 @@ class ProgrammerProphunt {
             findersScore: correctCount,
             hidersScore: notIdentified.length,
             correctlyIdentified: Array.from(correctIdentifications),
-            notIdentified: notIdentified.map(h => h.id)
+            notIdentified: notIdentified.map((h) => h.id),
         };
     }
 
@@ -247,7 +247,7 @@ class ProgrammerProphunt {
         return {
             roundComplete: true,
             nextRound: this.currentRound,
-            nextHidingTeam: this.getHidingTeam()
+            nextHidingTeam: this.getHidingTeam(),
         };
     }
 
@@ -266,11 +266,13 @@ class ProgrammerProphunt {
             throw new Error("Game is not over yet");
         }
 
-        const standings = this.players.map(p => ({
-            name: p.name,
-            team: this.team1.find(t => t.id === p.id) ? "Team 1" : "Team 2",
-            score: this.scores[p.id]
-        })).sort((a, b) => b.score - a.score);
+        const standings = this.players
+            .map((p) => ({
+                name: p.name,
+                team: this.team1.find((t) => t.id === p.id) ? "Team 1" : "Team 2",
+                score: this.scores[p.id],
+            }))
+            .sort((a, b) => b.score - a.score);
 
         return standings;
     }
@@ -286,7 +288,7 @@ class ProgrammerProphunt {
             findingTeam: this.getFindingTeam(),
             currentPhase: this.currentPhase,
             scores: this.scores,
-            isGameOver: this.isGameOver()
+            isGameOver: this.isGameOver(),
         };
     }
 }

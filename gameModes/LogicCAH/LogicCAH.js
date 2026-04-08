@@ -11,7 +11,7 @@ class LogicCAH {
         this.numPrompts = numPrompts;
 
         this.scores = {};
-        this.players.forEach(p => {
+        this.players.forEach((p) => {
             this.scores[p.id] = 0;
         });
 
@@ -42,15 +42,14 @@ class LogicCAH {
      */
     allAnswersSubmitted() {
         const nonDeciders = this.getNonDeciders();
-        return nonDeciders.every(player => 
-            this.playerAnswers[player.id] && 
-            this.playerAnswers[player.id].length === this.numPrompts
+        return nonDeciders.every(
+            (player) => this.playerAnswers[player.id] && this.playerAnswers[player.id].length === this.numPrompts
         );
     }
 
     /**
      * Submit answers from a player
-     * @param {string} playerId 
+     * @param {string} playerId
      * @param {array} answers - Array of answers for each prompt
      */
     submitAnswers(playerId, answers) {
@@ -58,7 +57,7 @@ class LogicCAH {
             throw new Error("Answers cannot be submitted at this time");
         }
 
-        const player = this.players.find(p => p.id === playerId);
+        const player = this.players.find((p) => p.id === playerId);
         if (!player) {
             throw new Error("Player not found");
         }
@@ -80,7 +79,7 @@ class LogicCAH {
 
         return {
             success: true,
-            allSubmitted: this.allAnswersSubmitted()
+            allSubmitted: this.allAnswersSubmitted(),
         };
     }
 
@@ -94,22 +93,22 @@ class LogicCAH {
         }
 
         const nonDeciders = this.getNonDeciders();
-        return nonDeciders.map(player => ({
+        return nonDeciders.map((player) => ({
             playerId: player.id,
-            answers: this.playerAnswers[player.id]
+            answers: this.playerAnswers[player.id],
         }));
     }
 
     /**
      * Decider selects which player's answers they agree with most
-     * @param {string} selectedPlayerId 
+     * @param {string} selectedPlayerId
      */
     deciderSelectsAnswers(selectedPlayerId) {
         if (this.roundState !== "SHOWING_ANSWERS") {
             throw new Error("Cannot select answers at this time");
         }
 
-        const player = this.players.find(p => p.id === selectedPlayerId);
+        const player = this.players.find((p) => p.id === selectedPlayerId);
         if (!player) {
             throw new Error("Player not found");
         }
@@ -124,7 +123,7 @@ class LogicCAH {
         return {
             success: true,
             selectedPlayer: player.name,
-            pointAwarded: true
+            pointAwarded: true,
         };
     }
 
@@ -136,10 +135,10 @@ class LogicCAH {
             throw new Error("No player has been selected yet");
         }
 
-        const selectedPlayer = this.players.find(p => p.id === this.selectedPlayerId);
+        const selectedPlayer = this.players.find((p) => p.id === this.selectedPlayerId);
         return {
             selectedPlayerName: selectedPlayer.name,
-            points: this.scores[this.selectedPlayerId]
+            points: this.scores[this.selectedPlayerId],
         };
     }
 
@@ -156,7 +155,7 @@ class LogicCAH {
         return {
             roundComplete: true,
             nextRound: this.currentRound,
-            nextDecider: this.getCurrentDecider()
+            nextDecider: this.getCurrentDecider(),
         };
     }
 
@@ -175,10 +174,12 @@ class LogicCAH {
             throw new Error("Game is not over yet");
         }
 
-        const standings = this.players.map(p => ({
-            name: p.name,
-            score: this.scores[p.id]
-        })).sort((a, b) => b.score - a.score);
+        const standings = this.players
+            .map((p) => ({
+                name: p.name,
+                score: this.scores[p.id],
+            }))
+            .sort((a, b) => b.score - a.score);
 
         return standings;
     }
@@ -193,7 +194,7 @@ class LogicCAH {
             currentDecider: this.getCurrentDecider(),
             roundState: this.roundState,
             scores: this.scores,
-            isGameOver: this.isGameOver()
+            isGameOver: this.isGameOver(),
         };
     }
 }
