@@ -1,0 +1,193 @@
+body {
+    font-family: monospace;
+    background: #1a1a1a;
+    color: #ccc;
+    padding: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+h2 { color: #fff; margin-bottom: 4px; text-align: center; }
+.hidden { display: none; }
+#game-screen p { text-align: center; }
+
+#code-display {
+    background: #2a2a2a;
+    border: 1px solid #444;
+    padding: 14px;
+    white-space: pre;
+    font-size: 14px;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin-bottom: 10px;
+}
+.char-correct { color: #6bcf6b; }
+.char-wrong   { color: #ff6060; background: #3a1a1a; }
+.char-cursor  { background: #555; }
+
+#stats {
+    font-size: 15px;
+    margin-bottom: 8px;
+    text-align: center;
+}
+#stats span { margin-right: 22px; }
+
+.buttons-row {
+    text-align: center;
+}
+
+button {
+    background: #1d6fa4;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 8px;
+    margin-top: 10px;
+}
+button:hover { background: #2589c3; }
+
+#result-screen { text-align: left; }
+
+/* ── Top: big stats + chart side-by-side ── */
+#result-top {
+    display: flex;
+    gap: 24px;
+    align-items: stretch;
+    margin-bottom: 18px;
+}
+
+#result-left {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    min-width: 120px;
+}
+
+.big-stat {
+    display: flex;
+    flex-direction: column;
+}
+.big-stat-label {
+    font-size: 14px;
+    color: #646669;
+    line-height: 1;
+}
+.big-stat-value {
+    font-size: 52px;
+    font-weight: 700;
+    color: #4db8ff;
+    line-height: 1.1;
+}
+
+#result-chart-wrap {
+    flex: 1 1 0;
+    min-height: 160px;
+    position: relative;
+}
+#result-chart {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* ── Bottom stats row ── */
+#result-stats-row {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #333;
+    padding-top: 14px;
+    margin-bottom: 18px;
+}
+
+.rs-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+}
+.rs-label {
+    font-size: 11px;
+    color: #646669;
+    margin-bottom: 2px;
+}
+.rs-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #ccc;
+}
+.rs-accent {
+    color: #4db8ff;
+}
+
+#lang-guess-section { margin-top: 14px; text-align: center; }
+#lang-guess-input {
+    font-size: 14px;
+    padding: 4px 8px;
+    background: #1a1a1a;
+    color: #ccc;
+    border: 1px solid #555;
+}
+#guess-result { margin-top: 8px; font-weight: bold; font-size: 15px; }
+
+a button { margin-top: 10px; }
+
+/* ── Keyboard ─────────────────────────────────── */
+#keyboard {
+    margin-top: 22px;
+    user-select: none;
+}
+
+.kb-row {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 5px;
+    justify-content: center;
+}
+
+.key {
+    background: #2e2e2e;
+    border: 1px solid #444;
+    border-bottom: 3px solid #222;
+    border-radius: 5px;
+    color: #aaa;
+    font-family: monospace;
+    font-size: 11px;
+    min-width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    transition: background 0.05s, transform 0.05s, color 0.05s;
+    padding: 0 5px;
+    box-sizing: border-box;
+}
+
+.key-wide      { min-width: 56px; }
+.key-extrawide { min-width: 72px; }
+.key-space     { min-width: 280px; }
+
+/* Key is physically pressed */
+.key.pressed {
+    background: #1d6fa4;
+    border-color: #1a5f8e;
+    border-bottom-width: 1px;
+    color: #fff;
+    transform: translateY(2px);
+}
+
+/* Next character to type */
+.key.next-key {
+    background: #3a3a3a;
+    border-color: #6bcf6b;
+    color: #6bcf6b;
+}
+
+/* Both at once (pressing the right key) */
+.key.pressed.next-key {
+    background: #1d6fa4;
+    color: #fff;
+}
