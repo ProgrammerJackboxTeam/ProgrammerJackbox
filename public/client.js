@@ -1,15 +1,9 @@
 const socket = io();
 
+// ============================================
+// LOBBY STATE
+// ============================================
 let playerName = "";
-let roomCode = "";
-let isHost = false;
-let currentGameMode = null;
-let currentSelection = null;
-let logiccahAnswers = [];
-
-// ============================================
-// LOBBY MANAGEMENT
-// ============================================
 let currentRoomCode = "";
 let isHost = false;
 let currentLobbyVisibility = "private";
@@ -29,17 +23,19 @@ fetch("/gamemodes.json")
         gamemodes = [];
     });
 
+// ============================================
+// NAME ENTRY & MENU
+// ============================================
+
 function submitName() {
     const name = document.getElementById("nameInput").value.trim();
-
     if (!/^[A-Za-z0-9 ]{1,}$/.test(name)) {
         alert("Name must be 1+ characters (letters, numbers, spaces)");
         return;
     }
-
     playerName = name;
     document.getElementById("nameEntry").classList.add("hidden");
-    document.getElementById("mainMenu").classList.remove("hidden");
+    document.getElementById("menu").classList.remove("hidden");
 }
 
 function hostPrivateLobby() {
@@ -76,7 +72,7 @@ function renderRandomGameChecklist() {
         checkbox.value = mode.name;
 
         label.appendChild(checkbox);
-        label.append(` ${mode.name} - ${mode.description}`);
+        label.append(` ${mode.displayName || mode.name} - ${mode.description}`);
         row.appendChild(label);
         checklist.appendChild(row);
     });
@@ -102,27 +98,6 @@ function submitRandomJoinPreferences() {
 }
 
 function showJoin() {
-    document.getElementById("mainMenu").classList.add("hidden");
-socket.on("room-created", payload => {
-    const roomCode = typeof payload === "string" ? payload : payload.roomCode;
-    const visibility = payload && typeof payload === "object" ? payload.visibility : "private";
-
-    document.getElementById("roomKey").innerText = roomCode || "-";
-    document.getElementById("lobbyTypeLabel").innerText = visibility === "public" ? "Public" : "Private";
-    document.getElementById("hostSection").classList.remove("hidden");
-    document.getElementById("menu").classList.add("hidden");
-    document.getElementById("joinSection").classList.add("hidden");
-    document.getElementById("randomJoinSection").classList.add("hidden");
-    currentRoomCode = roomCode || "";
-    currentLobbyVisibility = visibility || "private";
-    isHost = payload && typeof payload === "object" ? Boolean(payload.isHost) : true;
-
-    if (payload && payload.selectedGame) {
-        selectedGameMode = payload.selectedGame;
-    }
-});
-
-function showJoin() {
     document.getElementById("menu").classList.add("hidden");
     document.getElementById("randomJoinSection").classList.add("hidden");
     document.getElementById("joinSection").classList.remove("hidden");
@@ -138,68 +113,43 @@ function joinLobby() {
 }
 
 function back() {
-    document.getElementById("mainMenu").classList.remove("hidden");
+    location.reload();
+}
+
+function backToMenu() {
+    document.getElementById("randomJoinSection").classList.add("hidden");
     document.getElementById("joinSection").classList.add("hidden");
-    document.getElementById("hostLobby").classList.add("hidden");
-    document.getElementById("joinedLobby").classList.add("hidden");
-    document.getElementById("logiccahGame").classList.add("hidden");
-    document.getElementById("prophuntGame").classList.add("hidden");
-    document.getElementById("gameSettings").classList.add("hidden");
+    document.getElementById("menu").classList.remove("hidden");
 }
 
 // ============================================
-// SOCKET EVENTS
+// SOCKET EVENTS — LOBBY
 // ============================================
 
-socket.on("room-created", code => {
-    roomCode = code;
-    isHost = true;
-    document.getElementById("mainMenu").classList.add("hidden");
-    document.getElementById("roomKey").innerText = code;
-    document.getElementById("hostLobby").classList.remove("hidden");
-    updateSettingsVisibility();
-});
+socket.on("room-created", payload => {
+    const roomCode = typeof payload === "string" ? payload : payload.roomCode;
+    const visibility = payload && typeof payload === "object" ? payload.visibility : "private";
 
-socket.on("update-players", players => {
-    // Update host view
-    currentRoomCode = roomCode;
-    isHost = false;
-    currentLobbyVisibility = "private";
-    socket.emit("join-room", { roomCode, name: playerName });
-}
+    currentRoomCode = roomCode || "";
+    currentLobbyVisibility = visibility || "private";
+    isHost = payload && typeof payload === "object" ? Boolean(payload.isHost) : true;
 
-socket.on("join-error", msg => {
-    alert(msg);
-    currentRoomCode = "";
-    currentLobbyVisibility = "private";
-});
+    document.getElementById("roomKey").innerText = roomCode || "-";
+    document.getElementById("lobbyTypeLabel").innerText = visibility === "public" ? "Public" : "Private";
+    document.getElementById("hostSection").classList.remove("hidden");
+    document.getElementById("menu").classList.add("hidden");
+    document.getElementById("joinSection").classList.add("hidden");
+    document.getElementById("randomJoinSection").classList.add("hidden");
 
-socket.on("update-players", payload => {
-    const players = Array.isArray(payload) ? payload : payload.players;
-    const hostId = Array.isArray(payload) ? null : payload.hostId;
-    const visibility = Array.isArray(payload) ? "private" : (payload.visibility || "private");
-    const table = document.getElementById("playerTable");
-    table.innerHTML = "<tr><th>Name</th></tr>";
-    players.forEach(p => {
-        const row = document.createElement("tr");
-        row.innerHTML = `<td>${p.name}</td>`;
-        table.appendChild(row);
-    });
-
-    // Update joined view
-    const joinedTable = document.getElementById("joinedPlayerTable");
-    joinedTable.innerHTML = "<tr><th>Name</th></tr>";
-    players.forEach(p => {
-        const row = document.createElement("tr");
-        row.innerHTML = `<td>${p.name}</td>`;
-        joinedTable.appendChild(row);
-    });
-
-    // Enable start button if host and 2+ players
-    if (isHost && players.length >= 2) {
-        document.getElementById("startGameBtn").disabled = false;
-        document.getElementById("startGameBtn").innerText = `Start Game (${players.length} players)`;
+    if (payload && payload.selectedGame) {
+        selectedGameMode = payload.selectedGame;
     }
+});
+
+socket.on("room-joined", ({ roomCode: code, hostId }) => {
+    currentRoomCode = code;
+    isHost = false;
+    // hostSection becomes visible when update-players fires
 });
 
 socket.on("join-error", msg => {
@@ -207,373 +157,223 @@ socket.on("join-error", msg => {
     document.getElementById("joinCode").value = "";
 });
 
-socket.on("room-joined", (code) => {
-    roomCode = code;
-    isHost = false;
-    document.getElementById("joinSection").classList.add("hidden");
-    document.getElementById("mainMenu").classList.add("hidden");
-    document.getElementById("joinedLobby").classList.remove("hidden");
-});
+socket.on("update-players", payload => {
+    const players = Array.isArray(payload) ? payload : payload.players;
+    const hostId = Array.isArray(payload) ? null : payload.hostId;
+    const visibility = Array.isArray(payload) ? "private" : (payload.visibility || "private");
 
-// ============================================
-// GAME SETTINGS
-// ============================================
-
-function toggleSettings() {
-    document.getElementById("gameSettings").classList.toggle("hidden");
-}
-
-function updateSettings() {
-    updateSettingsVisibility();
-}
-
-function updateSettingsVisibility() {
-    const gameMode = document.getElementById("gameModeSelect").value;
-    if (gameMode === "LogicCAH") {
-        document.getElementById("logiccahSettings").classList.remove("hidden");
-        document.getElementById("prophuntSettings").classList.add("hidden");
-    } else {
-        document.getElementById("logiccahSettings").classList.add("hidden");
-        document.getElementById("prophuntSettings").classList.remove("hidden");
-    }
-}
-
-function startGame() {
-    const gameMode = document.getElementById("gameModeSelect").value;
-    const numRounds = parseInt(document.getElementById("numRounds").value);
-    const timeLimit = parseInt(document.getElementById("timeLimit").value);
-    
-    let config = {
-        roomCode,
-        gameMode,
-        numRounds,
-        timeLimit
-    };
-
-    if (gameMode === "LogicCAH") {
-        config.numPrompts = parseInt(document.getElementById("numPrompts").value);
-    } else {
-        config.complexity = document.getElementById("complexity").value;
-    }
-
-    socket.emit("start-game", config);
-}
-
-socket.on("game-started", ({ gameMode, status }) => {
-    currentGameMode = gameMode;
-    document.getElementById("hostLobby").classList.add("hidden");
-    document.getElementById("joinedLobby").classList.add("hidden");
-    
-    if (gameMode === "LogicCAH") {
-        startLogiccahGame(status);
-    } else {
-        startProphuntGame(status);
-    }
-});
-
-// ============================================
-// LOGICCAH GAME
-// ============================================
-
-function startLogiccahGame(status) {
-    document.getElementById("logiccahGame").classList.remove("hidden");
-    updateLogiccahStatus(status);
-    
-    // Check if this player is the decider
-    if (status.currentDecider.name === playerName) {
-        document.getElementById("waitingPhase").classList.add("hidden");
-        document.getElementById("deciderPhase").classList.remove("hidden");
-        document.getElementById("answerPhase").classList.add("hidden");
-    } else {
-        document.getElementById("answerPhase").classList.remove("hidden");
-        document.getElementById("deciderPhase").classList.add("hidden");
-        document.getElementById("waitingPhase").classList.add("hidden");
-        showLogiccahPrompts();
-    }
-}
-
-function updateLogiccahStatus(status) {
-    const statusDiv = document.getElementById("gameStatus");
-    statusDiv.innerHTML = `
-        <strong>Round ${status.currentRound + 1}/${status.totalRounds}</strong><br>
-        Decider: ${status.currentDecider.name}<br>
-        <br>
-        <strong>Scores:</strong><br>
-        ${Object.entries(status.scores).map(([id, score]) => {
-            const name = playerName; // Simplified for demo
-            return `${name}: ${score}`;
-        }).join('<br>')}
-    `;
-}
-
-function showLogiccahPrompts() {
-    // Demo prompts (in real game, these come from server)
-    const prompts = [
-        "What does a good programmer value most?",
-        "What's the worst part of debugging?"
-    ];
-
-    const container = document.getElementById("promptsContainer");
-    container.innerHTML = "";
-    logiccahAnswers = [];
-
-    prompts.forEach((prompt, idx) => {
-        const div = document.createElement("div");
-        div.innerHTML = `
-            <div class="prompt">${idx + 1}. ${prompt}</div>
-            <input type="text" class="answer-input" placeholder="Your answer" 
-                onchange="logiccahAnswers[${idx}] = this.value">
-        `;
-        container.appendChild(div);
-    });
-}
-
-function submitLogiccahAnswers() {
-    if (logiccahAnswers.length < 2 || logiccahAnswers.some(a => !a || a.trim() === "")) {
-        alert("Please answer all prompts");
-        return;
-    }
-
-    socket.emit("submit-answers", { roomCode, answers: logiccahAnswers });
-    document.getElementById("answerPhase").classList.add("hidden");
-    document.getElementById("waitingPhase").classList.remove("hidden");
-}
-
-socket.on("show-answers", ({ answers, deciderName }) => {
-    if (playerName !== deciderName) return;
-
-    const container = document.getElementById("answersContainer");
-    container.innerHTML = "";
-
-    answers.forEach((ans, idx) => {
-        const div = document.createElement("div");
-        div.className = "answer-option";
-        div.style.cursor = "pointer";
-        div.innerHTML = `
-            <strong>Option ${idx + 1}:</strong><br>
-            ${ans.answers.join("<br>")}
-        `;
-        div.onclick = () => selectLogiccahAnswer(idx, div, ans.playerId);
-        container.appendChild(div);
-    });
-});
-
-function selectLogiccahAnswer(idx, element, playerId) {
-    document.querySelectorAll("#answersContainer .answer-option").forEach(el => {
-        el.classList.remove("selected");
-    });
-    element.classList.add("selected");
-    currentSelection = playerId;
-}
-
-socket.on("selected-player-revealed", ({ selectedPlayerName, points }) => {
-    document.getElementById("answersContainer").innerHTML = `
-        <div style="text-align: center; padding: 20px;">
-            <h3>${selectedPlayerName} was selected!</h3>
-            <p>They now have ${points} point(s)</p>
-        </div>
-    `;
-});
-
-socket.on("round-completed", ({ status }) => {
-    document.getElementById("deciderPhase").classList.add("hidden");
-    document.getElementById("waitingPhase").classList.add("hidden");
-    updateLogiccahStatus(status);
-    startLogiccahGame(status);
-});
-
-socket.on("game-over", ({ finalScores }) => {
-    const scoresDiv = document.getElementById("finalScores");
-    scoresDiv.innerHTML = "<h3>Final Standings:</h3>";
-    finalScores.forEach((score, idx) => {
-        const div = document.createElement("div");
-        div.className = "score-item";
-        div.innerHTML = `<strong>${idx + 1}. ${score.name}</strong> <span>${score.score} points</span>`;
-        scoresDiv.appendChild(div);
-    });
-
-    document.getElementById("answerPhase").classList.add("hidden");
-    document.getElementById("deciderPhase").classList.add("hidden");
-    document.getElementById("waitingPhase").classList.add("hidden");
-    document.getElementById("gameOverPhase").classList.remove("hidden");
-});
-
-// ============================================
-// PROPHUNT GAME
-// ============================================
-
-function startProphuntGame(status) {
-    document.getElementById("prophuntGame").classList.remove("hidden");
-    updateProphuntStatus(status);
-
-    const playerTeam = status.hidingTeam.some(p => p.name === playerName) ? "hider" : "finder";
-
-    if (playerTeam === "hider") {
-        document.getElementById("hiderPhase").classList.remove("hidden");
-        document.getElementById("finderPhase").classList.add("hidden");
-        document.getElementById("prophuntWaitingPhase").classList.add("hidden");
-    } else {
-        document.getElementById("hiderPhase").classList.add("hidden");
-        document.getElementById("finderPhase").classList.add("hidden");
-        document.getElementById("prophuntWaitingPhase").classList.remove("hidden");
-    }
-}
-
-function updateProphuntStatus(status) {
-    const statusDiv = document.getElementById("prophuntStatus");
-    const hidersStr = status.hidingTeam.map(p => p.name).join(", ");
-    const findersStr = status.findingTeam.map(p => p.name).join(", ");
-    
-    statusDiv.innerHTML = `
-        <strong>Round ${status.currentRound + 1}/${status.totalRounds}</strong><br>
-        Phase: ${status.currentPhase}<br>
-        <br>
-        <strong>Hiders:</strong> ${hidersStr}<br>
-        <strong>Finders:</strong> ${findersStr}
-    `;
-}
-
-function submitHiderLine() {
-    const codeLine = document.getElementById("codeInput").value.trim();
-    if (!codeLine) {
-        alert("Please enter a line of code");
-        return;
-    }
-
-    socket.emit("submit-hider-line", { roomCode, codeLine });
-    document.getElementById("codeInput").value = "";
-    document.getElementById("hiderPhase").classList.add("hidden");
-    document.getElementById("prophuntWaitingPhase").classList.remove("hidden");
-}
-
-socket.on("show-code-and-finders", ({ codeBlock, finderNames }) => {
-    // Show code to finders
-    document.getElementById("codeDisplay").innerText = codeBlock;
-
-    const container = document.getElementById("lineSelectContainer");
-    container.innerHTML = "";
-
-    // Create options for each line (simplified - just number of hiders)
-    const numLines = codeBlock.split('\n').filter(l => l.trim().length > 0).length;
-    for (let i = 0; i < numLines; i++) {
-        const div = document.createElement("div");
-        div.className = "answer-option";
-        div.innerHTML = `<strong>Select this line</strong>`;
-        div.onclick = () => selectLine(i, div);
-        container.appendChild(div);
-    }
-
-    // Only show to finders
-    if (finderNames.includes(playerName)) {
-        document.getElementById("finderPhase").classList.remove("hidden");
-        document.getElementById("prophuntWaitingPhase").classList.add("hidden");
-    }
-});
-
-function selectLine(idx, element) {
-    document.querySelectorAll("#lineSelectContainer .answer-option").forEach(el => {
-        el.classList.remove("selected");
-    });
-    element.classList.add("selected");
-    currentSelection = idx;
-}
-
-function submitFinderSelection() {
-    if (currentSelection === null) {
-        alert("Please select a line");
-        return;
-    }
-
-    // In real game, map line number to hider ID
-    socket.emit("finder-select", { roomCode, selectedHiderId: currentSelection });
-    document.getElementById("finderPhase").classList.add("hidden");
-    document.getElementById("prophuntWaitingPhase").classList.remove("hidden");
-}
-
-socket.on("round-results", ({ findersScore, hidersScore, correctlyIdentified, notIdentified, scores }) => {
-    const resultsDiv = document.getElementById("prophuntResultsDisplay");
-    resultsDiv.innerHTML = `
-        <h4>Finders Score: ${findersScore}</h4>
-        <h4>Hiders Score: ${hidersScore}</h4>
-        <p><strong>Correctly Identified:</strong> ${correctlyIdentified.join(", ") || "None"}</p>
-        <p><strong>Not Identified:</strong> ${notIdentified.join(", ") || "None"}</p>
-    `;
-
-    document.getElementById("hiderPhase").classList.add("hidden");
-    document.getElementById("finderPhase").classList.add("hidden");
-    document.getElementById("prophuntWaitingPhase").classList.add("hidden");
-    document.getElementById("prophuntResultsPhase").classList.remove("hidden");
-});
-
-socket.on("game-over", ({ finalScores }) => {
-    const scoresDiv = document.getElementById("prophuntFinalScores");
-    scoresDiv.innerHTML = "<h3>Final Standings:</h3>";
-    finalScores.forEach((score, idx) => {
-        const div = document.createElement("div");
-        div.className = "score-item";
-        div.innerHTML = `<strong>${idx + 1}. ${score.name}</strong> <span>${score.score} points (${score.team})</span>`;
-        scoresDiv.appendChild(div);
-    });
-
-    document.getElementById("prophuntResultsPhase").classList.add("hidden");
-    document.getElementById("prophuntGameOverPhase").classList.remove("hidden");
-});
-
-socket.on("error", msg => {
-    console.error("Error:", msg);
-    alert("Error: " + msg);
-    if (currentRoomCode) {
-        document.getElementById("hostSection").classList.remove("hidden");
-        document.getElementById("menu").classList.add("hidden");
-        document.getElementById("joinSection").classList.add("hidden");
-        document.getElementById("randomJoinSection").classList.add("hidden");
-    }
-
+    if (hostId) isHost = (socket.id === hostId);
     lastPlayerCount = players.length;
     currentLobbyVisibility = visibility;
+
+    // Show lobby for all players (host and joined)
+    document.getElementById("hostSection").classList.remove("hidden");
+    document.getElementById("menu").classList.add("hidden");
+    document.getElementById("joinSection").classList.add("hidden");
+    document.getElementById("randomJoinSection").classList.add("hidden");
+
+    // Update player table
+    const table = document.getElementById("playerTable");
+    table.innerHTML = "<tr><th>Name</th></tr>";
+    players.forEach(p => {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${p.name}${p.id === hostId ? " (Host)" : ""}</td>`;
+        table.appendChild(row);
+    });
+
+    // Also update waiting player table if visible
+    const waitingTable = document.getElementById("waitingPlayerTable");
+    if (waitingTable) {
+        waitingTable.innerHTML = "<tr><th>Name</th></tr>";
+        players.forEach(p => {
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${p.name}${p.id === hostId ? " (Host)" : ""}</td>`;
+            waitingTable.appendChild(row);
+        });
+    }
+
+    // Show room code only to host
+    document.getElementById("roomCodeArea").classList.toggle("hidden", !isHost);
+    document.getElementById("lobbySectionTitle").innerText = isHost ? "Hosting Lobby" : "Waiting for Host";
     document.getElementById("lobbyTypeLabel").innerText = visibility === "public" ? "Public" : "Private";
-    if (hostId) {
-        isHost = socket.id === hostId;
-    }
 
-    updateGamemodeOptions(lastPlayerCount);
+    // Show "Select a Game" button for host with 2–8 players in a private lobby
+    const canStart = isHost && players.length >= 2 && players.length <= 8 && visibility !== "public";
+    document.getElementById("selectGameButton").classList.toggle("hidden", !canStart);
 
-    const selectGameButton = document.getElementById("selectGameButton");
-    if (isHost && players.length > 2 && currentLobbyVisibility !== "public") {
-        selectGameButton.classList.remove("hidden");
+    // Status message
+    const statusMsg = document.getElementById("lobbyStatusMsg");
+    if (!isHost) {
+        statusMsg.innerText = `${players.length} player${players.length !== 1 ? "s" : ""} in lobby. Waiting for host to start...`;
+        statusMsg.classList.remove("hidden");
     } else {
-        selectGameButton.classList.add("hidden");
+        const needed = Math.max(0, 2 - players.length);
+        if (needed > 0) {
+            statusMsg.innerText = `Need ${needed} more player${needed !== 1 ? "s" : ""} to start.`;
+            statusMsg.classList.remove("hidden");
+        } else {
+            statusMsg.classList.add("hidden");
+        }
     }
 
+    updateGamemodeOptions(players.length);
     renderBugFixerControls();
-});
-
-socket.on("gamemode-selected", gameMode => {
-    selectedGameMode = gameMode;
-    const selectedGameDisplay = document.getElementById("selectedGameDisplay");
-    if (gameMode) {
-        selectedGameDisplay.innerText = `Selected game: ${gameMode}`;
-        selectedGameDisplay.classList.remove("hidden");
-    } else {
-        selectedGameDisplay.classList.add("hidden");
-    }
-
-    const bugFixerArea = document.getElementById("bugFixerArea");
-    if (gameMode === "bugFixerGame") {
-        bugFixerArea.classList.remove("hidden");
-        renderBugFixerControls();
-    } else {
-        bugFixerArea.classList.add("hidden");
-        bugFixerState = null;
-        bugFixerSelectedCards = [];
-    }
-
     renderTerminationControls();
 });
 
+// ============================================
+// GAME HUB — HOST SELECTS A GAME
+// ============================================
+
 function showGameSelect() {
-    document.getElementById("gameSelectArea").classList.remove("hidden");
+    document.getElementById("hostSection").classList.add("hidden");
+    document.getElementById("gameHub").classList.remove("hidden");
+    document.getElementById("gameHubPlayerCount").innerText =
+        `${lastPlayerCount} player${lastPlayerCount !== 1 ? "s" : ""} in lobby`;
+    renderGameModeCards();
+    socket.emit("host-entering-gamehub", { roomCode: currentRoomCode });
 }
+
+function renderGameModeCards() {
+    const container = document.getElementById("gameModeCards");
+    container.innerHTML = "";
+    selectedGameMode = "";
+    document.getElementById("gameHubStartBtn").classList.add("hidden");
+    document.getElementById("gameHubSettings").classList.add("hidden");
+
+    gamemodes.forEach(mode => {
+        const card = document.createElement("div");
+        card.className = "game-card";
+        const meets = lastPlayerCount >= mode.minPlayers;
+        if (!meets) card.classList.add("unavailable");
+        card.innerHTML = `
+            <div class="game-icon">${mode.icon || "🎮"}</div>
+            <div class="game-name">${mode.displayName || mode.name}</div>
+            <div class="game-desc">${mode.description}</div>
+            <div class="game-min">Min: ${mode.minPlayers} player${mode.minPlayers !== 1 ? "s" : ""}</div>`;
+        if (meets) card.onclick = () => selectGameMode(mode);
+        container.appendChild(card);
+    });
+}
+
+function selectGameMode(mode) {
+    document.querySelectorAll(".game-card").forEach(c => c.classList.remove("selected"));
+    const idx = gamemodes.indexOf(mode);
+    const cards = document.querySelectorAll(".game-card");
+    if (cards[idx]) cards[idx].classList.add("selected");
+
+    selectedGameMode = mode.name;
+    renderGameHubSettings(mode);
+    document.getElementById("gameHubStartBtn").classList.remove("hidden");
+    socket.emit("select-gamemode", { roomCode: currentRoomCode, gameMode: mode.name });
+}
+
+function renderGameHubSettings(mode) {
+    const area = document.getElementById("gameHubSettings");
+    area.classList.remove("hidden");
+
+    if (mode.launchType === "redirect") {
+        area.innerHTML = `<p>This is a standalone game. All players will be redirected to <strong>${mode.url}</strong> when launched.</p>`;
+        return;
+    }
+
+    if (mode.name === "bugFixerGame") {
+        area.innerHTML = `
+            <h3>Bug Fixer Settings</h3>
+            <label>Points to win:</label>
+            <input id="bugFixerPointsToWinInput" type="number" min="1" value="5">
+            <label>Player submit timer (seconds, 0 = off):</label>
+            <input id="bugFixerSubmissionSecondsInput" type="number" min="0" value="0">
+            <label>Decider pick timer (seconds, 0 = off):</label>
+            <input id="bugFixerDeciderSecondsInput" type="number" min="0" value="0">
+            <label>If decider times out:</label>
+            <select id="bugFixerDeciderTimeoutAction">
+                <option value="no-point">No point awarded</option>
+                <option value="lowest-score">Award point to lowest-score player</option>
+            </select>`;
+    } else if (mode.name === "LogicCAH") {
+        area.innerHTML = `
+            <h3>Logic CAH Settings</h3>
+            <label>Number of Rounds:</label>
+            <select id="numRounds">
+                <option value="1">1 Round</option>
+                <option value="2" selected>2 Rounds</option>
+                <option value="3">3 Rounds</option>
+                <option value="5">5 Rounds</option>
+            </select>
+            <label>Time Limit (seconds):</label>
+            <input id="timeLimit" type="number" value="30" min="10" max="300">
+            <label>Prompts per Round:</label>
+            <input id="numPrompts" type="number" value="2" min="1" max="5">`;
+    } else if (mode.name === "programmerProphunt") {
+        area.innerHTML = `
+            <h3>Programmer Prophunt Settings</h3>
+            <label>Number of Rounds:</label>
+            <select id="numRounds">
+                <option value="1">1 Round</option>
+                <option value="2" selected>2 Rounds</option>
+                <option value="3">3 Rounds</option>
+                <option value="5">5 Rounds</option>
+            </select>
+            <label>Time Limit (seconds):</label>
+            <input id="timeLimit" type="number" value="30" min="10" max="300">
+            <label>Code Complexity:</label>
+            <select id="complexity">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+            </select>`;
+    }
+}
+
+function launchSelectedGame() {
+    const mode = gamemodes.find(m => m.name === selectedGameMode);
+    if (!mode || !currentRoomCode) return;
+
+    if (mode.launchType === "redirect") {
+        socket.emit("launch-redirect-game", { roomCode: currentRoomCode, url: mode.url });
+        window.location.href = mode.url;
+        return;
+    }
+
+    if (mode.name === "bugFixerGame") {
+        startBugFixerGame();
+    } else {
+        const numRounds = parseInt(document.getElementById("numRounds").value);
+        const timeLimit = parseInt(document.getElementById("timeLimit").value);
+        const config = { roomCode: currentRoomCode, gameMode: mode.name, numRounds, timeLimit };
+        if (mode.name === "LogicCAH") {
+            config.numPrompts = parseInt(document.getElementById("numPrompts").value);
+        } else {
+            config.complexity = document.getElementById("complexity").value;
+        }
+        socket.emit("start-game", config);
+    }
+}
+
+function backToLobby() {
+    document.getElementById("gameHub").classList.add("hidden");
+    document.getElementById("hostSection").classList.remove("hidden");
+    socket.emit("host-left-gamehub", { roomCode: currentRoomCode });
+}
+
+socket.on("host-selecting-game", () => {
+    document.getElementById("hostSection").classList.add("hidden");
+    document.getElementById("gameHubWaiting").classList.remove("hidden");
+});
+
+socket.on("host-left-gamehub", () => {
+    document.getElementById("gameHubWaiting").classList.add("hidden");
+    document.getElementById("hostSection").classList.remove("hidden");
+});
+
+socket.on("redirect-to-game", ({ url }) => {
+    window.location.href = url;
+});
+
+// ============================================
+// GAME MODE SELECTION (inline dropdown fallback)
+// ============================================
 
 function confirmGameSelect() {
     const gameMode = document.getElementById("gameSelect").value;
@@ -591,6 +391,46 @@ function confirmGameSelect() {
     socket.emit("select-gamemode", { roomCode: currentRoomCode, gameMode });
     document.getElementById("gameSelectArea").classList.add("hidden");
 }
+
+socket.on("gamemode-selected", gameMode => {
+    selectedGameMode = gameMode;
+
+    const selectedGameDisplay = document.getElementById("selectedGameDisplay");
+    if (gameMode) {
+        const mode = gamemodes.find(m => m.name === gameMode);
+        const displayName = mode ? (mode.displayName || gameMode) : gameMode;
+        selectedGameDisplay.innerText = `Selected game: ${displayName}`;
+        selectedGameDisplay.classList.remove("hidden");
+    } else {
+        selectedGameDisplay.classList.add("hidden");
+    }
+
+    // Update waiting screen message for non-host players
+    if (!isHost) {
+        const mode = gamemodes.find(m => m.name === gameMode);
+        const name = mode ? (mode.displayName || gameMode) : gameMode;
+        const waitingMsg = document.getElementById("gameHubWaitingMsg");
+        if (waitingMsg) {
+            waitingMsg.innerText = `Host is considering: ${name}`;
+        }
+    }
+
+    const bugFixerArea = document.getElementById("bugFixerArea");
+    if (gameMode === "bugFixerGame") {
+        bugFixerArea.classList.remove("hidden");
+        renderBugFixerControls();
+    } else {
+        bugFixerArea.classList.add("hidden");
+        bugFixerState = null;
+        bugFixerSelectedCards = [];
+    }
+
+    renderTerminationControls();
+});
+
+// ============================================
+// BUG FIXER GAME
+// ============================================
 
 function startBugFixerGame() {
     if (!currentRoomCode || selectedGameMode !== "bugFixerGame") {
@@ -628,6 +468,10 @@ function startBugFixerGame() {
         deciderSeconds,
         deciderTimeoutAction: deciderTimeoutAction.value === "lowest-score" ? "lowest-score" : "no-point"
     });
+
+    // Close Game Hub and show lobby with bugfixer area
+    document.getElementById("gameHub").classList.add("hidden");
+    document.getElementById("hostSection").classList.remove("hidden");
 }
 
 function submitBugFixerCards() {
@@ -657,7 +501,6 @@ function terminateCurrentGame() {
     if (!currentRoomCode || !selectedGameMode || !isHost) {
         return;
     }
-
     socket.emit("terminate-game", { roomCode: currentRoomCode });
 }
 
@@ -682,7 +525,6 @@ function removeBugFixerCard(index) {
     if (index < 0 || index >= bugFixerSelectedCards.length) {
         return;
     }
-
     bugFixerSelectedCards.splice(index, 1);
     renderBugFixerState(bugFixerState);
 }
@@ -870,6 +712,10 @@ socket.on("game-terminated", payload => {
     }
 });
 
+// ============================================
+// GAME MODE OPTIONS (inline dropdown)
+// ============================================
+
 function updateGamemodeOptions(playerCount) {
     const select = document.getElementById("gameSelect");
     const details = document.getElementById("gameDetails");
@@ -883,7 +729,7 @@ function updateGamemodeOptions(playerCount) {
     available.forEach(mode => {
         const option = document.createElement("option");
         option.value = mode.name;
-        option.textContent = mode.name;
+        option.textContent = mode.displayName || mode.name;
         select.appendChild(option);
     });
 
@@ -913,12 +759,11 @@ document.getElementById("gameSelect").addEventListener("change", event => {
     }
 });
 
-function back() {
-    location.reload();
-}
+// ============================================
+// ERROR HANDLING
+// ============================================
 
-function backToMenu() {
-    document.getElementById("randomJoinSection").classList.add("hidden");
-    document.getElementById("joinSection").classList.add("hidden");
-    document.getElementById("menu").classList.remove("hidden");
-}
+socket.on("error", msg => {
+    console.error("Socket error:", msg);
+    alert("Error: " + msg);
+});
