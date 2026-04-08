@@ -35,6 +35,7 @@
         "displayName": "Code Typer",
         "description": "Race to type code snippets as fast and accurately as possible.",
         "minPlayers": 1,
+        "type": "singleplayer",
         "launchType": "redirect",
         "url": "/codeTyper/",
         "icon": "⌨️"
@@ -44,6 +45,7 @@
         "displayName": "Flexbox Spider",
         "description": "Control a spider with CSS flexbox properties to reach its web.",
         "minPlayers": 1,
+        "type": "singleplayer",
         "launchType": "redirect",
         "url": "/flexboxSpider/",
         "icon": "🕷️"

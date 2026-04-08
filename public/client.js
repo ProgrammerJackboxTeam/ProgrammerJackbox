@@ -62,7 +62,8 @@ function renderRandomGameChecklist() {
         return;
     }
 
-    gamemodes.forEach((mode) => {
+    const mpModes = gamemodes.filter((m) => m.type !== "singleplayer");
+    mpModes.forEach((mode) => {
         const row = document.createElement("div");
         const label = document.createElement("label");
         const checkbox = document.createElement("input");
@@ -119,7 +120,34 @@ function back() {
 function backToMenu() {
     document.getElementById("randomJoinSection").classList.add("hidden");
     document.getElementById("joinSection").classList.add("hidden");
+    document.getElementById("singlePlayerSection").classList.add("hidden");
     document.getElementById("menu").classList.remove("hidden");
+}
+
+function showSinglePlayer() {
+    document.getElementById("menu").classList.add("hidden");
+    document.getElementById("singlePlayerSection").classList.remove("hidden");
+    renderSinglePlayerCards();
+}
+
+function renderSinglePlayerCards() {
+    const container = document.getElementById("singlePlayerCards");
+    container.innerHTML = "";
+
+    const spModes = gamemodes.filter((m) => m.type === "singleplayer");
+    spModes.forEach((mode) => {
+        const card = document.createElement("div");
+        card.className = "game-card";
+        card.innerHTML = `
+            <div class="game-icon">${mode.icon || "🎮"}</div>
+            <div class="game-name">${mode.displayName || mode.name}</div>
+            <div class="game-desc">${mode.description}</div>
+        `;
+        card.onclick = () => {
+            window.location.href = mode.url;
+        };
+        container.appendChild(card);
+    });
 }
 
 // ============================================
@@ -241,7 +269,8 @@ function renderGameModeCards() {
     document.getElementById("gameHubStartBtn").classList.add("hidden");
     document.getElementById("gameHubSettings").classList.add("hidden");
 
-    gamemodes.forEach((mode) => {
+    const mpModes = gamemodes.filter((m) => m.type !== "singleplayer");
+    mpModes.forEach((mode) => {
         const card = document.createElement("div");
         card.className = "game-card";
         const meets = lastPlayerCount >= mode.minPlayers;
