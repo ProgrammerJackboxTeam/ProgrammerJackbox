@@ -416,11 +416,22 @@ socket.on("gamemode-selected", gameMode => {
     }
 
     const bugFixerArea = document.getElementById("bugFixerArea");
+    const codeTyperLobbyControls = document.getElementById("codeTyperLobbyControls");
+
     if (gameMode === "bugFixerGame") {
         bugFixerArea.classList.remove("hidden");
+        if (codeTyperLobbyControls) codeTyperLobbyControls.classList.add("hidden");
         renderBugFixerControls();
+    } else if (gameMode === "codeTyperMultiplayer") {
+        bugFixerArea.classList.add("hidden");
+        if (codeTyperLobbyControls) codeTyperLobbyControls.classList.remove("hidden");
+        const startCodeTyperButton = document.getElementById("startCodeTyperButton");
+        if (startCodeTyperButton) startCodeTyperButton.classList.toggle("hidden", !isHost);
+        bugFixerState = null;
+        bugFixerSelectedCards = [];
     } else {
         bugFixerArea.classList.add("hidden");
+        if (codeTyperLobbyControls) codeTyperLobbyControls.classList.add("hidden");
         bugFixerState = null;
         bugFixerSelectedCards = [];
     }
@@ -431,6 +442,19 @@ socket.on("gamemode-selected", gameMode => {
 // ============================================
 // BUG FIXER GAME
 // ============================================
+
+function startCodeTyperGame() {
+    if (!currentRoomCode || selectedGameMode !== "codeTyperMultiplayer") {
+        return;
+    }
+
+    socket.emit("start-codetyper-multiplayer", {
+        roomCode: currentRoomCode,
+    });
+
+    document.getElementById("gameHub").classList.add("hidden");
+    document.getElementById("hostSection").classList.remove("hidden");
+}
 
 function startBugFixerGame() {
     if (!currentRoomCode || selectedGameMode !== "bugFixerGame") {
@@ -696,6 +720,12 @@ socket.on("bugfixer-state", state => {
 
 socket.on("bugfixer-error", message => {
     alert(message);
+});
+
+socket.on("launch-codetyper", ({ roomCode }) => {
+    const iframe = document.getElementById("codeTyperIframe");
+    iframe.src = `/codeTyperMultiplayer/?roomCode=${roomCode}&name=${encodeURIComponent(playerName)}&isHost=${isHost}&t=${Date.now()}`;
+    document.getElementById("codeTyperArea").classList.remove("hidden");
 });
 
 socket.on("game-terminated", payload => {

@@ -342,6 +342,19 @@
             <p id="gameDetails"></p>
         </div>
 
+        <div id="codeTyperArea" class="hidden" style="width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; background: #1a1a1a; z-index: 9999;">
+            <div style="position: absolute; top: 10px; right: 10px; z-index: 10000;">
+                <button style="width: auto; padding: 10px 20px" onclick="document.getElementById('codeTyperArea').classList.add('hidden')">Hide Game</button>
+            </div>
+            <iframe id="codeTyperIframe" src="" style="width: 100%; height: 100%; border: none;"></iframe>
+        </div>
+        
+        <div id="codeTyperLobbyControls" class="hidden" style="margin-top: 20px;">
+            <h3>Code Typer Multiplayer</h3>
+            <p>Race against others to type the snippet the fastest.</p>
+            <button id="startCodeTyperButton" class="hidden" onclick="startCodeTyperGame()">Launch Game</button>
+        </div>
+
         <button onclick="back()" style="margin-top: 10px;">Leave Lobby</button>
     </div>
 
