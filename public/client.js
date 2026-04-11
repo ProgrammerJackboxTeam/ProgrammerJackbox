@@ -1,5 +1,8 @@
 const socket = io();
 
+// ============================================
+// LOBBY STATE
+// ============================================
 let playerName = "";
 let currentRoomCode = "";
 let isHost = false;
@@ -12,8 +15,8 @@ let bugFixerSelectedCards = [];
 let prophuntState = null;
 
 fetch("/gamemodes.json")
-    .then(response => response.json())
-    .then(data => {
+    .then((response) => response.json())
+    .then((data) => {
         gamemodes = Array.isArray(data) ? data : [];
         updateGamemodeOptions(lastPlayerCount);
     })
@@ -21,15 +24,18 @@ fetch("/gamemodes.json")
         gamemodes = [];
     });
 
+// ============================================
+// NAME ENTRY & MENU
+// ============================================
+
 function submitName() {
     const name = document.getElementById("nameInput").value.trim();
-
-    if (!/^[A-Za-z0-9]{1,}$/.test(name)) {
-        alert("Name must be at least 1 character and contain only letters or numbers.");
+    if (!/^[A-Za-z0-9 ]{1,}$/.test(name)) {
+        alert("Name must be 1+ characters (letters, numbers, spaces)");
         return;
     }
-
     playerName = name;
+    document.getElementById("nameEntry").classList.add("hidden");
     document.getElementById("menu").classList.remove("hidden");
 }
 
@@ -57,7 +63,8 @@ function renderRandomGameChecklist() {
         return;
     }
 
-    gamemodes.forEach(mode => {
+    const mpModes = gamemodes.filter((m) => m.type !== "singleplayer");
+    mpModes.forEach((mode) => {
         const row = document.createElement("div");
         const label = document.createElement("label");
         const checkbox = document.createElement("input");
@@ -67,7 +74,7 @@ function renderRandomGameChecklist() {
         checkbox.value = mode.name;
 
         label.appendChild(checkbox);
-        label.append(` ${mode.name} - ${mode.description}`);
+        label.append(` ${mode.displayName || mode.name} - ${mode.description}`);
         row.appendChild(label);
         checklist.appendChild(row);
     });
@@ -75,7 +82,7 @@ function renderRandomGameChecklist() {
 
 function submitRandomJoinPreferences() {
     const selected = Array.from(document.querySelectorAll("input[name='randomGameMode']:checked"))
-        .map(entry => entry.value)
+        .map((entry) => entry.value)
         .filter(Boolean);
 
     if (selected.length === 0) {
@@ -88,28 +95,9 @@ function submitRandomJoinPreferences() {
     currentLobbyVisibility = "public";
     socket.emit("join-random-room", {
         name: playerName,
-        preferredGameModes: selected
+        preferredGameModes: selected,
     });
 }
-
-socket.on("room-created", payload => {
-    const roomCode = typeof payload === "string" ? payload : payload.roomCode;
-    const visibility = payload && typeof payload === "object" ? payload.visibility : "private";
-
-    document.getElementById("roomKey").innerText = roomCode || "-";
-    document.getElementById("lobbyTypeLabel").innerText = visibility === "public" ? "Public" : "Private";
-    document.getElementById("hostSection").classList.remove("hidden");
-    document.getElementById("menu").classList.add("hidden");
-    document.getElementById("joinSection").classList.add("hidden");
-    document.getElementById("randomJoinSection").classList.add("hidden");
-    currentRoomCode = roomCode || "";
-    currentLobbyVisibility = visibility || "private";
-    isHost = payload && typeof payload === "object" ? Boolean(payload.isHost) : true;
-
-    if (payload && payload.selectedGame) {
-        selectedGameMode = payload.selectedGame;
-    }
-});
 
 function showJoin() {
     document.getElementById("menu").classList.add("hidden");
@@ -118,99 +106,316 @@ function showJoin() {
 }
 
 function joinLobby() {
-    const roomCode = document.getElementById("joinCode").value.trim().toUpperCase();
-
-    currentRoomCode = roomCode;
-    isHost = false;
-    currentLobbyVisibility = "private";
-    socket.emit("join-room", { roomCode, name: playerName });
+    const code = document.getElementById("joinCode").value.trim().toUpperCase();
+    if (code.length !== 6) {
+        alert("Room code must be 6 characters");
+        return;
+    }
+    socket.emit("join-room", { roomCode: code, name: playerName });
 }
 
-socket.on("join-error", msg => {
-    alert(msg);
-    currentRoomCode = "";
-    currentLobbyVisibility = "private";
+function back() {
+    location.reload();
+}
+
+function backToMenu() {
+    document.getElementById("randomJoinSection").classList.add("hidden");
+    document.getElementById("joinSection").classList.add("hidden");
+    document.getElementById("singlePlayerSection").classList.add("hidden");
+    document.getElementById("menu").classList.remove("hidden");
+}
+
+function showSinglePlayer() {
+    document.getElementById("menu").classList.add("hidden");
+    document.getElementById("singlePlayerSection").classList.remove("hidden");
+    renderSinglePlayerCards();
+}
+
+function renderSinglePlayerCards() {
+    const container = document.getElementById("singlePlayerCards");
+    container.innerHTML = "";
+
+    const spModes = gamemodes.filter((m) => m.type === "singleplayer");
+    spModes.forEach((mode) => {
+        const card = document.createElement("div");
+        card.className = "game-card";
+        card.innerHTML = `
+            <div class="game-icon">${mode.icon || "🎮"}</div>
+            <div class="game-name">${mode.displayName || mode.name}</div>
+            <div class="game-desc">${mode.description}</div>
+        `;
+        card.onclick = () => {
+            window.location.href = mode.url;
+        };
+        container.appendChild(card);
+    });
+}
+
+// ============================================
+// SOCKET EVENTS — LOBBY
+// ============================================
+
+socket.on("room-created", (payload) => {
+    const roomCode = typeof payload === "string" ? payload : payload.roomCode;
+    const visibility = payload && typeof payload === "object" ? payload.visibility : "private";
+
+    currentRoomCode = roomCode || "";
+    currentLobbyVisibility = visibility || "private";
+    isHost = payload && typeof payload === "object" ? Boolean(payload.isHost) : true;
+
+    document.getElementById("roomKey").innerText = roomCode || "-";
+    document.getElementById("lobbyTypeLabel").innerText = visibility === "public" ? "Public" : "Private";
+    document.getElementById("hostSection").classList.remove("hidden");
+    document.getElementById("menu").classList.add("hidden");
+    document.getElementById("joinSection").classList.add("hidden");
+    document.getElementById("randomJoinSection").classList.add("hidden");
+
+    if (payload && payload.selectedGame) {
+        selectedGameMode = payload.selectedGame;
+    }
 });
 
-socket.on("update-players", payload => {
+socket.on("room-joined", ({ roomCode: code, hostId }) => {
+    currentRoomCode = code;
+    isHost = false;
+    // hostSection becomes visible when update-players fires
+});
+
+socket.on("join-error", (msg) => {
+    alert("Error: " + msg);
+    document.getElementById("joinCode").value = "";
+});
+
+socket.on("update-players", (payload) => {
     const players = Array.isArray(payload) ? payload : payload.players;
     const hostId = Array.isArray(payload) ? null : payload.hostId;
-    const visibility = Array.isArray(payload) ? "private" : (payload.visibility || "private");
+    const visibility = Array.isArray(payload) ? "private" : payload.visibility || "private";
+
+    if (hostId) isHost = socket.id === hostId;
+    lastPlayerCount = players.length;
+    currentLobbyVisibility = visibility;
+
+    // Show lobby for all players (host and joined)
+    document.getElementById("hostSection").classList.remove("hidden");
+    document.getElementById("menu").classList.add("hidden");
+    document.getElementById("joinSection").classList.add("hidden");
+    document.getElementById("randomJoinSection").classList.add("hidden");
+
+    // Update player table
     const table = document.getElementById("playerTable");
     table.innerHTML = "<tr><th>Name</th></tr>";
-
-    players.forEach(p => {
+    players.forEach((p) => {
         const row = document.createElement("tr");
-        row.innerHTML = `<td>${p.name}</td>`;
+        row.innerHTML = `<td>${p.name}${p.id === hostId ? " (Host)" : ""}</td>`;
         table.appendChild(row);
     });
 
-    if (currentRoomCode) {
-        document.getElementById("hostSection").classList.remove("hidden");
-        document.getElementById("menu").classList.add("hidden");
-        document.getElementById("joinSection").classList.add("hidden");
-        document.getElementById("randomJoinSection").classList.add("hidden");
+    // Also update waiting player table if visible
+    const waitingTable = document.getElementById("waitingPlayerTable");
+    if (waitingTable) {
+        waitingTable.innerHTML = "<tr><th>Name</th></tr>";
+        players.forEach((p) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${p.name}${p.id === hostId ? " (Host)" : ""}</td>`;
+            waitingTable.appendChild(row);
+        });
     }
 
-    lastPlayerCount = players.length;
-    currentLobbyVisibility = visibility;
+    // Show room code only to host
+    document.getElementById("roomCodeArea").classList.toggle("hidden", !isHost);
+    document.getElementById("lobbySectionTitle").innerText = isHost ? "Hosting Lobby" : "Waiting for Host";
     document.getElementById("lobbyTypeLabel").innerText = visibility === "public" ? "Public" : "Private";
-    if (hostId) {
-        isHost = socket.id === hostId;
-    }
 
-    updateGamemodeOptions(lastPlayerCount);
+    // Show "Select a Game" button for host with 2–8 players in a private lobby
+    const canStart = isHost && players.length >= 2 && players.length <= 8 && visibility !== "public";
+    document.getElementById("selectGameButton").classList.toggle("hidden", !canStart);
 
-    const selectGameButton = document.getElementById("selectGameButton");
-    if (isHost && players.length > 2 && currentLobbyVisibility !== "public") {
-        selectGameButton.classList.remove("hidden");
+    // Status message
+    const statusMsg = document.getElementById("lobbyStatusMsg");
+    if (!isHost) {
+        statusMsg.innerText = `${players.length} player${players.length !== 1 ? "s" : ""} in lobby. Waiting for host to start...`;
+        statusMsg.classList.remove("hidden");
     } else {
-        selectGameButton.classList.add("hidden");
+        const needed = Math.max(0, 2 - players.length);
+        if (needed > 0) {
+            statusMsg.innerText = `Need ${needed} more player${needed !== 1 ? "s" : ""} to start.`;
+            statusMsg.classList.remove("hidden");
+        } else {
+            statusMsg.classList.add("hidden");
+        }
     }
 
+    updateGamemodeOptions(players.length);
     renderBugFixerControls();
-});
-
-socket.on("gamemode-selected", gameMode => {
-    selectedGameMode = gameMode;
-    const selectedGameDisplay = document.getElementById("selectedGameDisplay");
-    if (gameMode) {
-        selectedGameDisplay.innerText = `Selected game: ${gameMode}`;
-        selectedGameDisplay.classList.remove("hidden");
-    } else {
-        selectedGameDisplay.classList.add("hidden");
-    }
-
-    const bugFixerArea = document.getElementById("bugFixerArea");
-    const prophuntArea = document.getElementById("prophuntArea");
-    if (gameMode === "bugFixerGame") {
-        bugFixerArea.classList.remove("hidden");
-        prophuntArea.classList.add("hidden");
-        renderBugFixerControls();
-    } else if (gameMode === "programmerProphunt") {
-        bugFixerArea.classList.add("hidden");
-        prophuntArea.classList.remove("hidden");
-        bugFixerState = null;
-        bugFixerSelectedCards = [];
-        renderProphuntControls();
-    } else {
-        bugFixerArea.classList.add("hidden");
-        prophuntArea.classList.add("hidden");
-        bugFixerState = null;
-        bugFixerSelectedCards = [];
-        prophuntState = null;
-    }
-
     renderTerminationControls();
 });
 
+// ============================================
+// GAME HUB — HOST SELECTS A GAME
+// ============================================
+
 function showGameSelect() {
-    document.getElementById("gameSelectArea").classList.remove("hidden");
+    document.getElementById("hostSection").classList.add("hidden");
+    document.getElementById("gameHub").classList.remove("hidden");
+    document.getElementById("gameHubPlayerCount").innerText =
+        `${lastPlayerCount} player${lastPlayerCount !== 1 ? "s" : ""} in lobby`;
+    renderGameModeCards();
+    socket.emit("host-entering-gamehub", { roomCode: currentRoomCode });
 }
+
+function renderGameModeCards() {
+    const container = document.getElementById("gameModeCards");
+    container.innerHTML = "";
+    selectedGameMode = "";
+    document.getElementById("gameHubStartBtn").classList.add("hidden");
+    document.getElementById("gameHubSettings").classList.add("hidden");
+
+    const mpModes = gamemodes.filter((m) => m.type !== "singleplayer");
+    mpModes.forEach((mode) => {
+        const card = document.createElement("div");
+        card.className = "game-card";
+        const meets = lastPlayerCount >= mode.minPlayers;
+        if (!meets) card.classList.add("unavailable");
+        card.innerHTML = `
+            <div class="game-icon">${mode.icon || "🎮"}</div>
+            <div class="game-name">${mode.displayName || mode.name}</div>
+            <div class="game-desc">${mode.description}</div>
+            <div class="game-min">Min: ${mode.minPlayers} player${mode.minPlayers !== 1 ? "s" : ""}</div>`;
+        if (meets) card.onclick = () => selectGameMode(mode);
+        container.appendChild(card);
+    });
+}
+
+function selectGameMode(mode) {
+    document.querySelectorAll(".game-card").forEach((c) => c.classList.remove("selected"));
+    const idx = gamemodes.indexOf(mode);
+    const cards = document.querySelectorAll(".game-card");
+    if (cards[idx]) cards[idx].classList.add("selected");
+
+    selectedGameMode = mode.name;
+    renderGameHubSettings(mode);
+    document.getElementById("gameHubStartBtn").classList.remove("hidden");
+    socket.emit("select-gamemode", { roomCode: currentRoomCode, gameMode: mode.name });
+}
+
+function renderGameHubSettings(mode) {
+    const area = document.getElementById("gameHubSettings");
+    area.classList.remove("hidden");
+
+    if (mode.launchType === "redirect") {
+        area.innerHTML = `<p>This is a standalone game. All players will be redirected to <strong>${mode.url}</strong> when launched.</p>`;
+        return;
+    }
+
+    if (mode.name === "bugFixerGame") {
+        area.innerHTML = `
+            <h3>Bug Fixer Settings</h3>
+            <label>Points to win:</label>
+            <input id="bugFixerPointsToWinInput" type="number" min="1" value="5">
+            <label>Player submit timer (seconds, 0 = off):</label>
+            <input id="bugFixerSubmissionSecondsInput" type="number" min="0" value="0">
+            <label>Decider pick timer (seconds, 0 = off):</label>
+            <input id="bugFixerDeciderSecondsInput" type="number" min="0" value="0">
+            <label>If decider times out:</label>
+            <select id="bugFixerDeciderTimeoutAction">
+                <option value="no-point">No point awarded</option>
+                <option value="lowest-score">Award point to lowest-score player</option>
+            </select>`;
+    } else if (mode.name === "LogicCAH") {
+        area.innerHTML = `
+            <h3>Logic CAH Settings</h3>
+            <label>Number of Rounds:</label>
+            <select id="numRounds">
+                <option value="1">1 Round</option>
+                <option value="2" selected>2 Rounds</option>
+                <option value="3">3 Rounds</option>
+                <option value="5">5 Rounds</option>
+            </select>
+            <label>Time Limit (seconds):</label>
+            <input id="timeLimit" type="number" value="30" min="10" max="300">
+            <label>Prompts per Round:</label>
+            <input id="numPrompts" type="number" value="2" min="1" max="5">`;
+    } else if (mode.name === "programmerProphunt") {
+        area.innerHTML = `
+            <h3>Programmer Prophunt Settings</h3>
+            <label>Number of Rounds:</label>
+            <select id="numRounds">
+                <option value="1">1 Round</option>
+                <option value="2" selected>2 Rounds</option>
+                <option value="3">3 Rounds</option>
+                <option value="5">5 Rounds</option>
+            </select>
+            <label>Time Limit (seconds):</label>
+            <input id="timeLimit" type="number" value="30" min="10" max="300">
+            <label>Code Complexity:</label>
+            <select id="complexity">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+            </select>`;
+    } else if (mode.name === "codeTyperMultiplayer") {
+        area.innerHTML = `
+            <h3>Code Typer Multiplayer Settings</h3>
+            <p>Race against others to type the snippet the fastest.</p>`;
+    } else {
+        area.innerHTML = "";
+    }
+}
+
+function launchSelectedGame() {
+    const mode = gamemodes.find((m) => m.name === selectedGameMode);
+    if (!mode || !currentRoomCode) return;
+
+    if (mode.launchType === "redirect") {
+        socket.emit("launch-redirect-game", { roomCode: currentRoomCode, url: mode.url });
+        window.location.href = mode.url;
+        return;
+    }
+
+    if (mode.name === "bugFixerGame") {
+        startBugFixerGame();
+    } else if (mode.name === "codeTyperMultiplayer") {
+        startCodeTyperGame();
+    } else {
+        const numRounds = parseInt(document.getElementById("numRounds").value);
+        const timeLimit = parseInt(document.getElementById("timeLimit").value);
+        const config = { roomCode: currentRoomCode, gameMode: mode.name, numRounds, timeLimit };
+        if (mode.name === "LogicCAH") {
+            config.numPrompts = parseInt(document.getElementById("numPrompts").value);
+        } else {
+            config.complexity = document.getElementById("complexity").value;
+        }
+        socket.emit("start-game", config);
+    }
+}
+
+function backToLobby() {
+    document.getElementById("gameHub").classList.add("hidden");
+    document.getElementById("hostSection").classList.remove("hidden");
+    socket.emit("host-left-gamehub", { roomCode: currentRoomCode });
+}
+
+socket.on("host-selecting-game", () => {
+    document.getElementById("hostSection").classList.add("hidden");
+    document.getElementById("gameHubWaiting").classList.remove("hidden");
+});
+
+socket.on("host-left-gamehub", () => {
+    document.getElementById("gameHubWaiting").classList.add("hidden");
+    document.getElementById("hostSection").classList.remove("hidden");
+});
+
+socket.on("redirect-to-game", ({ url }) => {
+    window.location.href = url;
+});
+
+// ============================================
+// GAME MODE SELECTION (inline dropdown fallback)
+// ============================================
 
 function confirmGameSelect() {
     const gameMode = document.getElementById("gameSelect").value;
-    const mode = gamemodes.find(entry => entry.name === gameMode);
+    const mode = gamemodes.find((entry) => entry.name === gameMode);
 
     if (!currentRoomCode) {
         return;
@@ -223,6 +428,70 @@ function confirmGameSelect() {
 
     socket.emit("select-gamemode", { roomCode: currentRoomCode, gameMode });
     document.getElementById("gameSelectArea").classList.add("hidden");
+}
+
+socket.on("gamemode-selected", (gameMode) => {
+    selectedGameMode = gameMode;
+
+    const selectedGameDisplay = document.getElementById("selectedGameDisplay");
+    if (gameMode) {
+        const mode = gamemodes.find((m) => m.name === gameMode);
+        const displayName = mode ? mode.displayName || gameMode : gameMode;
+        selectedGameDisplay.innerText = `Selected game: ${displayName}`;
+        selectedGameDisplay.classList.remove("hidden");
+    } else {
+        selectedGameDisplay.classList.add("hidden");
+    }
+
+    // Update waiting screen message for non-host players
+    if (!isHost) {
+        const mode = gamemodes.find((m) => m.name === gameMode);
+        const name = mode ? mode.displayName || gameMode : gameMode;
+        const waitingMsg = document.getElementById("gameHubWaitingMsg");
+        if (waitingMsg) {
+            waitingMsg.innerText = `Host is considering: ${name}`;
+        }
+    }
+
+    const bugFixerArea = document.getElementById("bugFixerArea");
+    const codeTyperLobbyControls = document.getElementById("codeTyperLobbyControls");
+
+    if (gameMode === "bugFixerGame") {
+        bugFixerArea.classList.remove("hidden");
+        if (codeTyperLobbyControls) codeTyperLobbyControls.classList.add("hidden");
+        renderBugFixerControls();
+    } else if (gameMode === "codeTyperMultiplayer") {
+        bugFixerArea.classList.add("hidden");
+        if (codeTyperLobbyControls) codeTyperLobbyControls.classList.remove("hidden");
+        const startCodeTyperButton = document.getElementById("startCodeTyperButton");
+        if (startCodeTyperButton) startCodeTyperButton.classList.toggle("hidden", !isHost);
+        bugFixerState = null;
+        bugFixerSelectedCards = [];
+    } else {
+        bugFixerArea.classList.add("hidden");
+        if (codeTyperLobbyControls) codeTyperLobbyControls.classList.add("hidden");
+        bugFixerState = null;
+        bugFixerSelectedCards = [];
+    }
+
+    renderTerminationControls();
+});
+
+// ============================================
+// BUG FIXER GAME
+// ============================================
+
+function startCodeTyperGame() {
+    if (!currentRoomCode || selectedGameMode !== "codeTyperMultiplayer") {
+        return;
+    }
+
+    socket.emit("start-codetyper-multiplayer", {
+        roomCode: currentRoomCode,
+    });
+
+    document.getElementById("gameHub").classList.add("hidden");
+    document.getElementById("hostSection").classList.remove("hidden");
 }
 
 function startBugFixerGame() {
@@ -259,8 +528,12 @@ function startBugFixerGame() {
         pointsToWin,
         submissionSeconds,
         deciderSeconds,
-        deciderTimeoutAction: deciderTimeoutAction.value === "lowest-score" ? "lowest-score" : "no-point"
+        deciderTimeoutAction: deciderTimeoutAction.value === "lowest-score" ? "lowest-score" : "no-point",
     });
+
+    // Close Game Hub and show lobby with bugfixer area
+    document.getElementById("gameHub").classList.add("hidden");
+    document.getElementById("hostSection").classList.remove("hidden");
 }
 
 function submitBugFixerCards() {
@@ -275,14 +548,14 @@ function submitBugFixerCards() {
 
     socket.emit("bugfixer-submit", {
         roomCode: currentRoomCode,
-        chosenCards: [...bugFixerSelectedCards]
+        chosenCards: [...bugFixerSelectedCards],
     });
 }
 
 function pickBugFixerWinner(submissionId) {
     socket.emit("bugfixer-pick-winner", {
         roomCode: currentRoomCode,
-        submissionId
+        submissionId,
     });
 }
 
@@ -290,7 +563,6 @@ function terminateCurrentGame() {
     if (!currentRoomCode || !selectedGameMode || !isHost) {
         return;
     }
-
     socket.emit("terminate-game", { roomCode: currentRoomCode });
 }
 
@@ -379,7 +651,6 @@ function removeBugFixerCard(index) {
     if (index < 0 || index >= bugFixerSelectedCards.length) {
         return;
     }
-
     bugFixerSelectedCards.splice(index, 1);
     renderBugFixerState(bugFixerState);
 }
@@ -412,15 +683,17 @@ function renderBugFixerControls() {
 
     startButton.classList.toggle("hidden", !(isHost && bugFixerState.canStart));
 
-    const showSubmit = bugFixerState.active
-        && !bugFixerState.isDecider
-        && bugFixerState.phase === "submitting"
-        && !bugFixerState.yourSubmitted;
+    const showSubmit =
+        bugFixerState.active &&
+        !bugFixerState.isDecider &&
+        bugFixerState.phase === "submitting" &&
+        !bugFixerState.yourSubmitted;
     submitButton.classList.toggle("hidden", !showSubmit);
 
-    const showJudge = bugFixerState.active
-        && bugFixerState.isDecider
-        && (bugFixerState.phase === "judging" || bugFixerState.phase === "confirming");
+    const showJudge =
+        bugFixerState.active &&
+        bugFixerState.isDecider &&
+        (bugFixerState.phase === "judging" || bugFixerState.phase === "confirming");
     judgeArea.classList.toggle("hidden", !showJudge);
 
     renderTerminationControls();
@@ -567,9 +840,8 @@ function renderBugFixerState(state) {
     if (state.timerSettings) {
         submissionSecondsInput.value = String(state.timerSettings.submissionSeconds || 0);
         deciderSecondsInput.value = String(state.timerSettings.deciderSeconds || 0);
-        deciderTimeoutAction.value = state.timerSettings.deciderTimeoutAction === "lowest-score"
-            ? "lowest-score"
-            : "no-point";
+        deciderTimeoutAction.value =
+            state.timerSettings.deciderTimeoutAction === "lowest-score" ? "lowest-score" : "no-point";
     }
 
     pointsToWinInput.disabled = Boolean(state.active);
@@ -587,7 +859,7 @@ function renderBugFixerState(state) {
     responsesRequired.innerText = String(state.responsesRequired || 0);
 
     const currentHand = Array.isArray(state.yourHand) ? state.yourHand : [];
-    bugFixerSelectedCards = bugFixerSelectedCards.filter(card => currentHand.includes(card));
+    bugFixerSelectedCards = bugFixerSelectedCards.filter((card) => currentHand.includes(card));
 
     hand.innerHTML = "";
     if (Array.isArray(state.yourHand) && state.yourHand.length > 0) {
@@ -629,7 +901,7 @@ function renderBugFixerState(state) {
 
     submissions.innerHTML = "";
     if (Array.isArray(state.submissionOptions) && state.submissionOptions.length > 0) {
-        state.submissionOptions.forEach(entry => {
+        state.submissionOptions.forEach((entry) => {
             const row = document.createElement("div");
             const buttonLabel = state.phase === "confirming" ? "Switch to This" : "Pick";
             row.innerHTML = `<button onclick="pickBugFixerWinner(${entry.submissionId})">${buttonLabel}</button> ${entry.text}`;
@@ -640,7 +912,7 @@ function renderBugFixerState(state) {
     scoreboard.innerHTML = "";
     if (Array.isArray(state.scores)) {
         const sorted = [...state.scores].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
-        sorted.forEach(entry => {
+        sorted.forEach((entry) => {
             const item = document.createElement("li");
             item.innerText = `${entry.name}: ${entry.score}`;
             scoreboard.appendChild(item);
@@ -649,7 +921,7 @@ function renderBugFixerState(state) {
 
     revealList.innerHTML = "";
     if (state.lastResult && Array.isArray(state.lastResult.revealedSubmissions)) {
-        state.lastResult.revealedSubmissions.forEach(entry => {
+        state.lastResult.revealedSubmissions.forEach((entry) => {
             const item = document.createElement("li");
             item.innerText = `${entry.playerName}: ${entry.text}`;
             revealList.appendChild(item);
@@ -659,18 +931,24 @@ function renderBugFixerState(state) {
     renderBugFixerControls();
 }
 
-socket.on("bugfixer-state", state => {
+socket.on("bugfixer-state", (state) => {
     if (selectedGameMode === "bugFixerGame") {
         document.getElementById("bugFixerArea").classList.remove("hidden");
     }
     renderBugFixerState(state);
 });
 
-socket.on("bugfixer-error", message => {
+socket.on("bugfixer-error", (message) => {
     alert(message);
 });
 
-socket.on("game-terminated", payload => {
+socket.on("launch-codetyper", ({ roomCode }) => {
+    const iframe = document.getElementById("codeTyperIframe");
+    iframe.src = `/codeTyperMultiplayer/?roomCode=${roomCode}&name=${encodeURIComponent(playerName)}&isHost=${isHost}&t=${Date.now()}`;
+    document.getElementById("codeTyperArea").classList.remove("hidden");
+});
+
+socket.on("game-terminated", (payload) => {
     selectedGameMode = "";
     bugFixerState = null;
     bugFixerSelectedCards = [];
@@ -679,12 +957,20 @@ socket.on("game-terminated", payload => {
     document.getElementById("selectedGameDisplay").classList.add("hidden");
     document.getElementById("bugFixerArea").classList.add("hidden");
     document.getElementById("prophuntArea").classList.add("hidden");
+
+    document.getElementById("codeTyperArea").classList.add("hidden");
+    const codeTyperLobbyControls = document.getElementById("codeTyperLobbyControls");
+    if (codeTyperLobbyControls) codeTyperLobbyControls.classList.add("hidden");
     renderTerminationControls();
 
     if (payload && payload.gameMode) {
         alert(`${payload.gameMode} was terminated by host ${payload.byHost}.`);
     }
 });
+
+// ============================================
+// GAME MODE OPTIONS (inline dropdown)
+// ============================================
 
 function updateGamemodeOptions(playerCount) {
     const select = document.getElementById("gameSelect");
@@ -694,12 +980,12 @@ function updateGamemodeOptions(playerCount) {
     }
 
     select.innerHTML = "";
-    const available = gamemodes.filter(mode => playerCount >= mode.minPlayers);
+    const available = gamemodes.filter((mode) => playerCount >= mode.minPlayers);
 
-    available.forEach(mode => {
+    available.forEach((mode) => {
         const option = document.createElement("option");
         option.value = mode.name;
-        option.textContent = mode.name;
+        option.textContent = mode.displayName || mode.name;
         select.appendChild(option);
     });
 
@@ -722,19 +1008,18 @@ function updateGamemodeDetails(mode) {
     details.innerText = `${mode.description} (Min players: ${mode.minPlayers})`;
 }
 
-document.getElementById("gameSelect").addEventListener("change", event => {
-    const selected = gamemodes.find(mode => mode.name === event.target.value);
+document.getElementById("gameSelect").addEventListener("change", (event) => {
+    const selected = gamemodes.find((mode) => mode.name === event.target.value);
     if (selected) {
         updateGamemodeDetails(selected);
     }
 });
 
-function back() {
-    location.reload();
-}
+// ============================================
+// ERROR HANDLING
+// ============================================
 
-function backToMenu() {
-    document.getElementById("randomJoinSection").classList.add("hidden");
-    document.getElementById("joinSection").classList.add("hidden");
-    document.getElementById("menu").classList.remove("hidden");
-}
+socket.on("error", (msg) => {
+    console.error("Socket error:", msg);
+    alert("Error: " + msg);
+});

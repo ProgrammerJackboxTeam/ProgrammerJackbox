@@ -1,6 +1,7 @@
 Each round, players are presented with a long block of code in a programming language. The objective is to retype the code as accurately and quickly as possible. The game evaluates players based on their typing speed (words per minute), accuracy, and errors.
 
 Scoring:
+
 - Words per minute (WPM)
 - Number of errors
 - Overall accuracy percentage

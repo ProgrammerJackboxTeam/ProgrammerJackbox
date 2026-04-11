@@ -1,0 +1,211 @@
+body {
+    font-family: monospace;
+    background: #1a1a1a;
+    color: #ccc;
+    padding: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+h2 {
+    color: #fff;
+    margin-bottom: 4px;
+    text-align: center;
+}
+h3#room-info {
+    color: #4db8ff;
+    margin-bottom: 20px;
+    text-align: center;
+}
+.hidden {
+    display: none;
+}
+#game-screen p,
+#waiting-screen p {
+    text-align: center;
+}
+
+#players-list {
+    background: #2a2a2a;
+    border: 1px solid #444;
+    padding: 14px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+.player-item {
+    padding: 8px;
+    border-bottom: 1px solid #444;
+}
+.player-item:last-child {
+    border-bottom: none;
+}
+
+#opponent-progress {
+    margin-bottom: 20px;
+}
+.progress-bar-container {
+    background: #333;
+    border-radius: 4px;
+    height: 12px;
+    overflow: hidden;
+    margin-top: 5px;
+    margin-bottom: 15px;
+}
+.progress-bar {
+    background: #4db8ff;
+    height: 100%;
+    width: 0%;
+    transition: width 0.2s;
+}
+.progress-label {
+    font-size: 13px;
+    color: #ccc;
+    display: flex;
+    justify-content: space-between;
+}
+
+#code-display {
+    background: #2a2a2a;
+    border: 1px solid #444;
+    padding: 14px;
+    white-space: pre;
+    font-size: 14px;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin-bottom: 10px;
+}
+.char-correct {
+    color: #6bcf6b;
+}
+.char-wrong {
+    color: #ff6060;
+    background: #3a1a1a;
+}
+.char-cursor {
+    background: #555;
+}
+
+#stats {
+    font-size: 15px;
+    margin-bottom: 8px;
+    text-align: center;
+}
+#stats span {
+    margin-right: 22px;
+}
+
+.buttons-row {
+    text-align: center;
+}
+
+button {
+    background: #1d6fa4;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 8px;
+    margin-top: 10px;
+    border-radius: 4px;
+}
+button:hover {
+    background: #2589c3;
+}
+
+#result-screen {
+    text-align: center;
+}
+
+#final-leaderboard {
+    list-style: none;
+    padding: 0;
+    max-width: 500px;
+    margin: 0 auto 20px auto;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+#final-leaderboard li {
+    padding: 10px;
+    border-bottom: 1px solid #444;
+    font-size: 16px;
+    display: flex;
+    justify-content: space-between;
+}
+#final-leaderboard li:last-child {
+    border-bottom: none;
+}
+.rank-1 {
+    color: #ffd700;
+    font-weight: bold;
+}
+.rank-2 {
+    color: #c0c0c0;
+}
+.rank-3 {
+    color: #cd7f32;
+}
+
+/* ── Keyboard ─────────────────────────────────── */
+#keyboard {
+    margin-top: 22px;
+    user-select: none;
+}
+
+.kb-row {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 5px;
+    justify-content: center;
+}
+
+.key {
+    background: #2e2e2e;
+    border: 1px solid #444;
+    border-bottom: 3px solid #222;
+    border-radius: 5px;
+    color: #aaa;
+    font-family: monospace;
+    font-size: 11px;
+    min-width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    transition:
+        background 0.05s,
+        transform 0.05s,
+        color 0.05s;
+    padding: 0 5px;
+    box-sizing: border-box;
+}
+
+.key-wide {
+    min-width: 56px;
+}
+.key-extrawide {
+    min-width: 72px;
+}
+.key-space {
+    min-width: 280px;
+}
+
+.key.pressed {
+    background: #1d6fa4;
+    border-color: #1a5f8e;
+    border-bottom-width: 1px;
+    color: #fff;
+    transform: translateY(2px);
+}
+
+.key.next-key {
+    background: #3a3a3a;
+    border-color: #6bcf6b;
+    color: #6bcf6b;
+}
+
+.key.pressed.next-key {
+    background: #1d6fa4;
+    color: #fff;
+}
