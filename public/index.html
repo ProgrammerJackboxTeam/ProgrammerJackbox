@@ -103,6 +103,61 @@
         <ul id="bugFixerRevealList"></ul>
     </div>
 
+    <div id="prophuntArea" class="hidden">
+        <h3>Programmer Prophunt</h3>
+        <p id="prophuntStatus">Waiting to start.</p>
+
+        <label for="prophuntComplexityInput">Complexity:</label>
+        <select id="prophuntComplexityInput">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+        </select>
+
+        <label for="prophuntRoundSecondsInput">Round timer (seconds):</label>
+        <input id="prophuntRoundSecondsInput" type="number" min="5" value="45">
+
+        <label for="prophuntRoundsInput">Rounds:</label>
+        <input id="prophuntRoundsInput" type="number" min="1" value="3">
+
+        <button id="startProphuntButton" class="hidden" onclick="startProphuntGame()">Start Programmer Prophunt</button>
+
+        <p><strong>Round:</strong> <span id="prophuntRoundDisplay">-</span></p>
+        <p><strong>Phase:</strong> <span id="prophuntPhaseDisplay">-</span></p>
+        <p><strong>Hiding Team:</strong> <span id="prophuntHidingTeamDisplay">-</span></p>
+        <p><strong>Finder Team:</strong> <span id="prophuntFinderTeamDisplay">-</span></p>
+
+        <h4>Teams</h4>
+        <p><strong>Team A:</strong> <span id="prophuntTeamAList">-</span></p>
+        <p><strong>Team B:</strong> <span id="prophuntTeamBList">-</span></p>
+
+        <h4>Code Block</h4>
+        <pre id="prophuntCodeBlock">No active round.</pre>
+
+        <div id="prophuntHiderControls" class="hidden">
+            <h4>Hider Edit</h4>
+            <label for="prophuntLineSelect">Target line:</label>
+            <select id="prophuntLineSelect"></select>
+            <label for="prophuntLineTextInput">Line content:</label>
+            <input id="prophuntLineTextInput" type="text" placeholder="Write your line">
+            <button id="prophuntApplyEditButton" onclick="applyProphuntEdit()">Apply Edit</button>
+            <button id="prophuntConfirmHiderButton" onclick="confirmProphuntHiderEdit()">Confirm My Line</button>
+        </div>
+
+        <div id="prophuntFinderControls" class="hidden">
+            <h4>Finder Guess</h4>
+            <label for="prophuntFinderLineSelect">Suspicious line:</label>
+            <select id="prophuntFinderLineSelect"></select>
+            <button id="prophuntFinderConfirmButton" onclick="confirmProphuntFinderGuess()">Confirm Guess</button>
+        </div>
+
+        <h4>Scoreboard</h4>
+        <ul id="prophuntScoreboard"></ul>
+
+        <h4>Last Round Result</h4>
+        <p id="prophuntLastResult">-</p>
+    </div>
+
     <button onclick="back()">Close Lobby</button>
 </div>
 

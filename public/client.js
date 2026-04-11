@@ -9,6 +9,7 @@ let lastPlayerCount = 0;
 let selectedGameMode = "";
 let bugFixerState = null;
 let bugFixerSelectedCards = [];
+let prophuntState = null;
 
 fetch("/gamemodes.json")
     .then(response => response.json())
@@ -181,13 +182,23 @@ socket.on("gamemode-selected", gameMode => {
     }
 
     const bugFixerArea = document.getElementById("bugFixerArea");
+    const prophuntArea = document.getElementById("prophuntArea");
     if (gameMode === "bugFixerGame") {
         bugFixerArea.classList.remove("hidden");
+        prophuntArea.classList.add("hidden");
         renderBugFixerControls();
-    } else {
+    } else if (gameMode === "programmerProphunt") {
         bugFixerArea.classList.add("hidden");
+        prophuntArea.classList.remove("hidden");
         bugFixerState = null;
         bugFixerSelectedCards = [];
+        renderProphuntControls();
+    } else {
+        bugFixerArea.classList.add("hidden");
+        prophuntArea.classList.add("hidden");
+        bugFixerState = null;
+        bugFixerSelectedCards = [];
+        prophuntState = null;
     }
 
     renderTerminationControls();
@@ -283,6 +294,70 @@ function terminateCurrentGame() {
     socket.emit("terminate-game", { roomCode: currentRoomCode });
 }
 
+function startProphuntGame() {
+    if (!currentRoomCode || selectedGameMode !== "programmerProphunt") {
+        return;
+    }
+
+    const complexity = document.getElementById("prophuntComplexityInput").value;
+    const roundSeconds = Number(document.getElementById("prophuntRoundSecondsInput").value);
+    const rounds = Number(document.getElementById("prophuntRoundsInput").value);
+
+    if (!["easy", "medium", "hard"].includes(complexity)) {
+        alert("Complexity must be easy, medium, or hard.");
+        return;
+    }
+    if (!Number.isInteger(roundSeconds) || roundSeconds < 5) {
+        alert("Round timer must be at least 5 seconds.");
+        return;
+    }
+    if (!Number.isInteger(rounds) || rounds < 1) {
+        alert("Rounds must be at least 1.");
+        return;
+    }
+
+    socket.emit("start-prophunt", {
+        roomCode: currentRoomCode,
+        complexity,
+        roundSeconds,
+        rounds
+    });
+}
+
+function applyProphuntEdit() {
+    if (!prophuntState || !prophuntState.active) {
+        return;
+    }
+
+    const lineRef = document.getElementById("prophuntLineSelect").value;
+    const lineText = document.getElementById("prophuntLineTextInput").value;
+    socket.emit("prophunt-edit-line", {
+        roomCode: currentRoomCode,
+        lineRef,
+        lineText
+    });
+}
+
+function confirmProphuntHiderEdit() {
+    if (!prophuntState || !prophuntState.active) {
+        return;
+    }
+
+    socket.emit("prophunt-confirm-hider", { roomCode: currentRoomCode });
+}
+
+function confirmProphuntFinderGuess() {
+    if (!prophuntState || !prophuntState.active) {
+        return;
+    }
+
+    const lineRef = document.getElementById("prophuntFinderLineSelect").value;
+    socket.emit("prophunt-confirm-finder", {
+        roomCode: currentRoomCode,
+        lineRef
+    });
+}
+
 function addBugFixerCard(cardText) {
     if (!bugFixerState || !bugFixerState.active || bugFixerState.yourSubmitted) {
         return;
@@ -350,6 +425,123 @@ function renderBugFixerControls() {
 
     renderTerminationControls();
 }
+
+function renderProphuntControls() {
+    const startButton = document.getElementById("startProphuntButton");
+    const hiderControls = document.getElementById("prophuntHiderControls");
+    const finderControls = document.getElementById("prophuntFinderControls");
+
+    if (selectedGameMode !== "programmerProphunt") {
+        startButton.classList.add("hidden");
+        hiderControls.classList.add("hidden");
+        finderControls.classList.add("hidden");
+        return;
+    }
+
+    if (!prophuntState) {
+        startButton.classList.toggle("hidden", !isHost || lastPlayerCount < 4);
+        hiderControls.classList.add("hidden");
+        finderControls.classList.add("hidden");
+        return;
+    }
+
+    startButton.classList.toggle("hidden", !(isHost && prophuntState.canStart));
+    hiderControls.classList.toggle("hidden", !(prophuntState.active && prophuntState.role === "hider" && prophuntState.phase === "hiding"));
+    finderControls.classList.toggle("hidden", !(prophuntState.active && prophuntState.role === "finder" && prophuntState.phase === "finding"));
+}
+
+function renderProphuntState(state) {
+    prophuntState = state;
+
+    const status = document.getElementById("prophuntStatus");
+    const roundDisplay = document.getElementById("prophuntRoundDisplay");
+    const phaseDisplay = document.getElementById("prophuntPhaseDisplay");
+    const hidingTeamDisplay = document.getElementById("prophuntHidingTeamDisplay");
+    const finderTeamDisplay = document.getElementById("prophuntFinderTeamDisplay");
+    const teamAList = document.getElementById("prophuntTeamAList");
+    const teamBList = document.getElementById("prophuntTeamBList");
+    const codeBlock = document.getElementById("prophuntCodeBlock");
+    const lineSelect = document.getElementById("prophuntLineSelect");
+    const finderLineSelect = document.getElementById("prophuntFinderLineSelect");
+    const lineTextInput = document.getElementById("prophuntLineTextInput");
+    const scoreboard = document.getElementById("prophuntScoreboard");
+    const lastResult = document.getElementById("prophuntLastResult");
+    const complexityInput = document.getElementById("prophuntComplexityInput");
+    const roundSecondsInput = document.getElementById("prophuntRoundSecondsInput");
+    const roundsInput = document.getElementById("prophuntRoundsInput");
+
+    status.innerText = state.message || "";
+    roundDisplay.innerText = state.active ? `${state.roundNumber}/${state.totalRounds}` : "-";
+    phaseDisplay.innerText = state.phase || "-";
+    hidingTeamDisplay.innerText = state.hidingTeamName || "-";
+    finderTeamDisplay.innerText = state.finderTeamName || "-";
+
+    if (Array.isArray(state.teamA) && state.teamA.length > 0) {
+        teamAList.innerText = state.teamA.join(", ");
+    } else {
+        teamAList.innerText = "-";
+    }
+    if (Array.isArray(state.teamB) && state.teamB.length > 0) {
+        teamBList.innerText = state.teamB.join(", ");
+    } else {
+        teamBList.innerText = "-";
+    }
+
+    if (Array.isArray(state.visibleLines) && state.visibleLines.length > 0) {
+        codeBlock.innerText = state.visibleLines.map(line => `${line.number}. ${line.text}`).join("\n");
+    } else {
+        codeBlock.innerText = "Code is hidden for this phase.";
+    }
+
+    complexityInput.disabled = Boolean(state.active);
+    roundSecondsInput.disabled = Boolean(state.active);
+    roundsInput.disabled = Boolean(state.active);
+
+    lineSelect.innerHTML = "";
+    if (Array.isArray(state.editableLineOptions)) {
+        state.editableLineOptions.forEach(option => {
+            const el = document.createElement("option");
+            el.value = option.ref;
+            el.textContent = option.label;
+            lineSelect.appendChild(el);
+        });
+    }
+
+    finderLineSelect.innerHTML = "";
+    if (Array.isArray(state.finderLineOptions)) {
+        state.finderLineOptions.forEach(option => {
+            const el = document.createElement("option");
+            el.value = option.ref;
+            el.textContent = option.label;
+            finderLineSelect.appendChild(el);
+        });
+    }
+
+    lineTextInput.value = state.yourDraftLine || "";
+
+    scoreboard.innerHTML = "";
+    if (state.scores) {
+        ["A", "B"].forEach(team => {
+            const li = document.createElement("li");
+            li.innerText = `Team ${team}: ${state.scores[team] || 0}`;
+            scoreboard.appendChild(li);
+        });
+    }
+
+    lastResult.innerText = state.lastResultMessage || "-";
+    renderProphuntControls();
+}
+
+socket.on("prophunt-state", state => {
+    if (selectedGameMode === "programmerProphunt") {
+        document.getElementById("prophuntArea").classList.remove("hidden");
+    }
+    renderProphuntState(state);
+});
+
+socket.on("prophunt-error", message => {
+    alert(message);
+});
 
 function renderBugFixerState(state) {
     bugFixerState = state;
@@ -482,9 +674,11 @@ socket.on("game-terminated", payload => {
     selectedGameMode = "";
     bugFixerState = null;
     bugFixerSelectedCards = [];
+    prophuntState = null;
 
     document.getElementById("selectedGameDisplay").classList.add("hidden");
     document.getElementById("bugFixerArea").classList.add("hidden");
+    document.getElementById("prophuntArea").classList.add("hidden");
     renderTerminationControls();
 
     if (payload && payload.gameMode) {

@@ -14,6 +14,83 @@ app.use(express.static("public"));
 const BUG_FIXER_MIN_PLAYERS = 3;
 const BUG_FIXER_HAND_SIZE = 5;
 const BUG_FIXER_FINALIZE_DELAY_MS = 10000;
+const PROPHUNT_MIN_PLAYERS = 4;
+
+const PROPHUNT_SNIPPETS = {
+    easy: [
+        [
+            "function sum(nums) {",
+            "  let total = 0;",
+            "  for (const n of nums) {",
+            "    total += n;",
+            "  }",
+            "  return total;",
+            "}"
+        ],
+        [
+            "function greet(name) {",
+            "  if (!name) return \"Hello\";",
+            "  return `Hello, ${name}`;",
+            "}"
+        ]
+    ],
+    medium: [
+        [
+            "function formatUsers(users) {",
+            "  return users",
+            "    .filter(user => user.active)",
+            "    .map(user => ({",
+            "      id: user.id,",
+            "      tag: `${user.first}.${user.last}`.toLowerCase()",
+            "    }));",
+            "}"
+        ],
+        [
+            "function buildReport(rows) {",
+            "  const grouped = {};",
+            "  for (const row of rows) {",
+            "    grouped[row.type] = (grouped[row.type] || 0) + row.value;",
+            "  }",
+            "  return Object.entries(grouped).sort((a, b) => b[1] - a[1]);",
+            "}"
+        ]
+    ],
+    hard: [
+        [
+            "async function loadDashboard(client) {",
+            "  const [projects, users] = await Promise.all([",
+            "    client.getProjects(),",
+            "    client.getUsers()",
+            "  ]);",
+            "",
+            "  const userById = new Map(users.map(u => [u.id, u]));",
+            "  return projects.map(project => ({",
+            "    id: project.id,",
+            "    owner: userById.get(project.ownerId)?.name || \"unknown\",",
+            "    openIssues: project.issues.filter(issue => !issue.closed).length",
+            "  }));",
+            "}"
+        ],
+        [
+            "function tokenize(source) {",
+            "  const tokens = [];",
+            "  let current = \"\";",
+            "",
+            "  for (const ch of source) {",
+            "    if (/\\s/.test(ch)) {",
+            "      if (current) tokens.push(current);",
+            "      current = \"\";",
+            "      continue;",
+            "    }",
+            "    current += ch;",
+            "  }",
+            "",
+            "  if (current) tokens.push(current);",
+            "  return tokens;",
+            "}"
+        ]
+    ]
+};
 
 function normalizeName(name) {
     return String(name || "").trim().toLowerCase();
@@ -112,6 +189,16 @@ function clearAllBugFixerTimers(state) {
     clearBugFixerTimer(state, "submissionTimeout");
     clearBugFixerTimer(state, "deciderTimeout");
     clearBugFixerTimer(state, "finalizeTimeout");
+}
+
+function clearProphuntTimers(state) {
+    if (!state || !state.timerHandles) {
+        return;
+    }
+    if (state.timerHandles.phaseTimeout) {
+        clearTimeout(state.timerHandles.phaseTimeout);
+        state.timerHandles.phaseTimeout = null;
+    }
 }
 
 function countPromptBlanks(prompt) {
@@ -618,6 +705,352 @@ function initializeBugFixer(roomCode, payload) {
     return null;
 }
 
+function getProphuntTeamName(teamId) {
+    return teamId === "A" ? "Team A" : "Team B";
+}
+
+function getPlayerTeam(state, playerId) {
+    if (!state || !state.teams) {
+        return null;
+    }
+    if (state.teams.A.includes(playerId)) {
+        return "A";
+    }
+    if (state.teams.B.includes(playerId)) {
+        return "B";
+    }
+    return null;
+}
+
+function createProphuntBaseLines(complexity) {
+    const key = ["easy", "medium", "hard"].includes(complexity) ? complexity : "easy";
+    const snippet = randomItem(PROPHUNT_SNIPPETS[key]) || PROPHUNT_SNIPPETS.easy[0];
+    return snippet.map((text, index) => ({ ref: `B:${index + 1}`, text }));
+}
+
+function buildProphuntComposedLines(room, state) {
+    const byRef = {};
+    Object.entries(state.hiderAssignments || {}).forEach(([playerId, assignment]) => {
+        if (!assignment) {
+            return;
+        }
+        byRef[assignment.lineRef] = {
+            ...assignment,
+            playerId
+        };
+    });
+
+    const baseLines = (state.baseLines || []).map(base => {
+        const override = byRef[base.ref];
+        return {
+            ref: base.ref,
+            text: override ? override.text : base.text,
+            ownerPlayerId: override ? override.playerId : null,
+            isNew: false
+        };
+    });
+
+    const newLines = Object.entries(byRef)
+        .filter(([, assignment]) => assignment.isNew)
+        .sort((a, b) => getPlayerName(room, a[1].playerId).localeCompare(getPlayerName(room, b[1].playerId)))
+        .map(([, assignment]) => ({
+            ref: assignment.lineRef,
+            text: assignment.text,
+            ownerPlayerId: assignment.playerId,
+            isNew: true
+        }));
+
+    return [...baseLines, ...newLines];
+}
+
+function buildProphuntLineOptions(room, state, playerId) {
+    const current = state.hiderAssignments[playerId];
+    const currentRef = current ? current.lineRef : null;
+    const options = [];
+
+    (state.baseLines || []).forEach((line, index) => {
+        const takenByOther = Object.entries(state.hiderAssignments || {}).some(([otherPlayerId, assignment]) => {
+            return otherPlayerId !== playerId && assignment && assignment.lineRef === line.ref;
+        });
+        if (!takenByOther || currentRef === line.ref) {
+            options.push({
+                ref: line.ref,
+                label: `Line ${index + 1}`
+            });
+        }
+    });
+
+    options.push({ ref: "NEW_LINE", label: "Create new line" });
+    return options;
+}
+
+function emitProphuntState(roomCode) {
+    const room = rooms[roomCode];
+    if (!room || room.selectedGame !== "programmerProphunt") {
+        return;
+    }
+
+    room.players.forEach(player => {
+        io.to(player.id).emit("prophunt-state", buildProphuntPayloadForPlayer(room, player.id));
+    });
+}
+
+function buildProphuntPayloadForPlayer(room, playerId) {
+    const state = room.prophunt;
+    const canStart = room.selectedGame === "programmerProphunt"
+        && room.host === playerId
+        && room.players.length >= PROPHUNT_MIN_PLAYERS
+        && room.players.length % 2 === 0;
+
+    if (!state || !state.active) {
+        return {
+            active: false,
+            canStart,
+            message: room.players.length < PROPHUNT_MIN_PLAYERS
+                ? `Need at least ${PROPHUNT_MIN_PLAYERS} players to start Programmer Prophunt.`
+                : room.players.length % 2 !== 0
+                    ? "Programmer Prophunt needs an even number of players."
+                    : "Programmer Prophunt is ready.",
+            teamA: [],
+            teamB: [],
+            scores: state && state.scores ? state.scores : { A: 0, B: 0 },
+            lastResultMessage: state && state.lastResultMessage ? state.lastResultMessage : ""
+        };
+    }
+
+    const playerTeam = getPlayerTeam(state, playerId);
+    const role = state.phase === "hiding"
+        ? (playerTeam === state.hidingTeam ? "hider" : "finder")
+        : state.phase === "finding"
+            ? (playerTeam === state.finderTeam ? "finder" : "hider")
+            : "observer";
+
+    const composedLines = buildProphuntComposedLines(room, state);
+    const shouldShowCode = state.phase !== "hiding" || role === "hider";
+    const visibleLines = shouldShowCode
+        ? composedLines.map((line, index) => ({ number: index + 1, ref: line.ref, text: line.text }))
+        : [];
+
+    const finderLineOptions = state.phase === "finding" && role === "finder"
+        ? composedLines.map((line, index) => ({ ref: line.ref, label: `Line ${index + 1}` }))
+        : [];
+
+    const yourAssignment = state.hiderAssignments[playerId] || null;
+    const yourDraftLine = yourAssignment ? yourAssignment.text : "";
+    const message = state.message || "";
+
+    return {
+        active: true,
+        canStart,
+        message,
+        phase: state.phase,
+        roundNumber: state.roundNumber,
+        totalRounds: state.totalRounds,
+        role,
+        hidingTeamName: getProphuntTeamName(state.hidingTeam),
+        finderTeamName: getProphuntTeamName(state.finderTeam),
+        teamA: state.teams.A.map(id => getPlayerName(room, id)),
+        teamB: state.teams.B.map(id => getPlayerName(room, id)),
+        visibleLines,
+        editableLineOptions: state.phase === "hiding" && role === "hider"
+            ? buildProphuntLineOptions(room, state, playerId)
+            : [],
+        finderLineOptions,
+        yourDraftLine,
+        scores: state.scores,
+        lastResultMessage: state.lastResultMessage || "",
+        deadlineTs: state.deadlineTs || null,
+        serverNowTs: Date.now()
+    };
+}
+
+function startProphuntHidingPhase(roomCode) {
+    const room = rooms[roomCode];
+    if (!room || room.selectedGame !== "programmerProphunt" || !room.prophunt || !room.prophunt.active) {
+        return;
+    }
+
+    const state = room.prophunt;
+    clearProphuntTimers(state);
+
+    state.phase = "hiding";
+    state.message = `Round ${state.roundNumber}: ${getProphuntTeamName(state.hidingTeam)} is hiding.`;
+    state.baseLines = createProphuntBaseLines(state.settings.complexity);
+    state.hiderAssignments = {};
+    state.finderGuesses = {};
+    state.deadlineTs = Date.now() + (state.settings.roundSeconds * 1000);
+
+    state.timerHandles.phaseTimeout = setTimeout(() => {
+        finishProphuntHidingPhase(roomCode, true);
+    }, state.settings.roundSeconds * 1000);
+
+    emitProphuntState(roomCode);
+}
+
+function finishProphuntHidingPhase(roomCode, fromTimeout = false) {
+    const room = rooms[roomCode];
+    if (!room || !room.prophunt || !room.prophunt.active || room.prophunt.phase !== "hiding") {
+        return;
+    }
+
+    const state = room.prophunt;
+    clearProphuntTimers(state);
+
+    const hiders = state.teams[state.hidingTeam];
+    let penalties = 0;
+    hiders.forEach(playerId => {
+        const assignment = state.hiderAssignments[playerId];
+        if (!assignment || !assignment.confirmed) {
+            penalties += 1;
+            delete state.hiderAssignments[playerId];
+        }
+    });
+
+    if (fromTimeout && penalties > 0) {
+        state.scores[state.hidingTeam] -= penalties;
+    }
+
+    state.phase = "finding";
+    state.message = `${getProphuntTeamName(state.finderTeam)} is finding suspicious lines.`;
+    state.deadlineTs = Date.now() + (state.settings.roundSeconds * 1000);
+
+    state.timerHandles.phaseTimeout = setTimeout(() => {
+        finalizeProphuntRound(roomCode, true);
+    }, state.settings.roundSeconds * 1000);
+
+    emitProphuntState(roomCode);
+}
+
+function finalizeProphuntRound(roomCode, fromTimeout = false) {
+    const room = rooms[roomCode];
+    if (!room || !room.prophunt || !room.prophunt.active || room.prophunt.phase !== "finding") {
+        return;
+    }
+
+    const state = room.prophunt;
+    clearProphuntTimers(state);
+
+    const finders = state.teams[state.finderTeam];
+    let finderPenalty = 0;
+    finders.forEach(playerId => {
+        const guess = state.finderGuesses[playerId];
+        if (!guess || !guess.confirmed) {
+            finderPenalty += 1;
+        }
+    });
+    if (fromTimeout && finderPenalty > 0) {
+        state.scores[state.finderTeam] -= finderPenalty;
+    }
+
+    const hiderByLine = {};
+    Object.entries(state.hiderAssignments || {}).forEach(([playerId, assignment]) => {
+        if (assignment) {
+            hiderByLine[assignment.lineRef] = playerId;
+        }
+    });
+
+    let finderPoints = 0;
+    const calledOutHiders = new Set();
+    Object.values(state.finderGuesses || {}).forEach(guess => {
+        if (!guess || !guess.confirmed) {
+            return;
+        }
+        const calledHider = hiderByLine[guess.lineRef];
+        if (calledHider) {
+            finderPoints += 1;
+            calledOutHiders.add(calledHider);
+        }
+    });
+
+    const hiderIds = Object.keys(state.hiderAssignments || {});
+    const hiddenCount = hiderIds.filter(id => !calledOutHiders.has(id)).length;
+
+    state.scores[state.finderTeam] += finderPoints;
+    state.scores[state.hidingTeam] += hiddenCount;
+
+    state.lastResultMessage = `${getProphuntTeamName(state.finderTeam)} earned ${finderPoints} point(s); ${getProphuntTeamName(state.hidingTeam)} earned ${hiddenCount} point(s).${finderPenalty > 0 ? ` ${getProphuntTeamName(state.finderTeam)} also lost ${finderPenalty} point(s) from timeouts.` : ""}`;
+
+    if (state.roundNumber >= state.totalRounds) {
+        state.active = false;
+        state.phase = "finished";
+        state.message = `Programmer Prophunt finished. Team A: ${state.scores.A}, Team B: ${state.scores.B}.`;
+        state.deadlineTs = null;
+        emitProphuntState(roomCode);
+        return;
+    }
+
+    state.roundNumber += 1;
+    state.hidingTeam = state.hidingTeam === "A" ? "B" : "A";
+    state.finderTeam = state.hidingTeam === "A" ? "B" : "A";
+    startProphuntHidingPhase(roomCode);
+}
+
+function initializeProphunt(roomCode, payload) {
+    const room = rooms[roomCode];
+    if (!room) {
+        return "Room not found.";
+    }
+
+    if (room.players.length < PROPHUNT_MIN_PLAYERS) {
+        return `Need at least ${PROPHUNT_MIN_PLAYERS} players to start Programmer Prophunt.`;
+    }
+    if (room.players.length % 2 !== 0) {
+        return "Programmer Prophunt requires an even number of players.";
+    }
+
+    const complexity = ["easy", "medium", "hard"].includes(payload && payload.complexity)
+        ? payload.complexity
+        : "easy";
+    const roundSeconds = sanitizeNonNegativeInt(payload && payload.roundSeconds, 45);
+    const totalRounds = sanitizeNonNegativeInt(payload && payload.rounds, 3);
+    if (roundSeconds < 5) {
+        return "Round timer must be at least 5 seconds.";
+    }
+    if (totalRounds < 1) {
+        return "Rounds must be at least 1.";
+    }
+
+    if (room.prophunt) {
+        clearProphuntTimers(room.prophunt);
+    }
+
+    const shuffledPlayers = shuffle(room.players.map(player => player.id));
+    const half = shuffledPlayers.length / 2;
+
+    room.prophunt = {
+        active: true,
+        settings: {
+            complexity,
+            roundSeconds
+        },
+        totalRounds,
+        roundNumber: 1,
+        teams: {
+            A: shuffledPlayers.slice(0, half),
+            B: shuffledPlayers.slice(half)
+        },
+        scores: {
+            A: 0,
+            B: 0
+        },
+        hidingTeam: "A",
+        finderTeam: "B",
+        phase: "hiding",
+        baseLines: [],
+        hiderAssignments: {},
+        finderGuesses: {},
+        message: "",
+        lastResultMessage: "",
+        deadlineTs: null,
+        timerHandles: {
+            phaseTimeout: null
+        }
+    };
+
+    startProphuntHidingPhase(roomCode);
+    return null;
+}
+
 function generateRoomCode() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
@@ -629,7 +1062,8 @@ function createRoom({ hostId, hostName, visibility = "private", selectedGame = n
         players: [{ id: hostId, name: hostName }],
         selectedGame,
         visibility,
-        bugFixer: null
+        bugFixer: null,
+        prophunt: null
     };
     return roomCode;
 }
@@ -656,6 +1090,9 @@ function findAvailablePublicRoomsByGames(preferredGames) {
             }
 
             if (room.selectedGame === "bugFixerGame" && room.bugFixer && room.bugFixer.active) {
+                return false;
+            }
+            if (room.selectedGame === "programmerProphunt" && room.prophunt && room.prophunt.active) {
                 return false;
             }
 
@@ -772,6 +1209,8 @@ io.on("connection", socket => {
 
         if (targetRoom.selectedGame === "bugFixerGame") {
             emitBugFixerState(targetRoomCode);
+        } else if (targetRoom.selectedGame === "programmerProphunt") {
+            emitProphuntState(targetRoomCode);
         }
     });
 
@@ -803,6 +1242,10 @@ io.on("connection", socket => {
             socket.emit("join-error", "Bug Fixer is already in progress. Please wait for the next game.");
             return;
         }
+        if (room.selectedGame === "programmerProphunt" && room.prophunt && room.prophunt.active) {
+            socket.emit("join-error", "Programmer Prophunt is already in progress. Please wait for the next game.");
+            return;
+        }
 
         room.players.push({ id: socket.id, name: String(name).trim() });
         socket.join(roomCode);
@@ -813,6 +1256,8 @@ io.on("connection", socket => {
             socket.emit("gamemode-selected", room.selectedGame);
             if (room.selectedGame === "bugFixerGame") {
                 emitBugFixerState(roomCode);
+            } else if (room.selectedGame === "programmerProphunt") {
+                emitProphuntState(roomCode);
             }
         }
     });
@@ -829,12 +1274,175 @@ io.on("connection", socket => {
         }
 
         room.selectedGame = gameMode;
+        if (room.bugFixer) {
+            clearAllBugFixerTimers(room.bugFixer);
+        }
+        if (room.prophunt) {
+            clearProphuntTimers(room.prophunt);
+        }
         room.bugFixer = null;
+        room.prophunt = null;
         io.to(roomCode).emit("gamemode-selected", gameMode);
 
         if (gameMode === "bugFixerGame") {
             emitBugFixerState(roomCode);
+        } else if (gameMode === "programmerProphunt") {
+            emitProphuntState(roomCode);
         }
+    });
+
+    socket.on("start-prophunt", payload => {
+        const roomCode = payload && payload.roomCode;
+        const room = rooms[roomCode];
+        if (!room || room.host !== socket.id || room.selectedGame !== "programmerProphunt") {
+            return;
+        }
+
+        const error = initializeProphunt(roomCode, payload || {});
+        if (error) {
+            socket.emit("prophunt-error", error);
+        }
+    });
+
+    socket.on("prophunt-edit-line", ({ roomCode, lineRef, lineText }) => {
+        const room = rooms[roomCode];
+        if (!room || room.selectedGame !== "programmerProphunt" || !room.prophunt || !room.prophunt.active) {
+            return;
+        }
+
+        const state = room.prophunt;
+        if (state.phase !== "hiding") {
+            socket.emit("prophunt-error", "You can only edit during the hiding phase.");
+            return;
+        }
+
+        const team = getPlayerTeam(state, socket.id);
+        if (team !== state.hidingTeam) {
+            socket.emit("prophunt-error", "Only the hiding team can edit right now.");
+            return;
+        }
+
+        const text = String(lineText || "");
+        if (!text.trim()) {
+            socket.emit("prophunt-error", "Line content cannot be empty.");
+            return;
+        }
+
+        let targetRef = lineRef;
+        let isNew = false;
+        if (lineRef === "NEW_LINE") {
+            targetRef = `N:${socket.id}`;
+            isNew = true;
+        } else {
+            const exists = (state.baseLines || []).some(line => line.ref === lineRef);
+            if (!exists) {
+                socket.emit("prophunt-error", "Invalid line target.");
+                return;
+            }
+        }
+
+        const takenByOther = Object.entries(state.hiderAssignments || {}).some(([playerId, assignment]) => {
+            return playerId !== socket.id && assignment && assignment.lineRef === targetRef;
+        });
+        if (takenByOther) {
+            socket.emit("prophunt-error", "Another hider already controls that line.");
+            return;
+        }
+
+        state.hiderAssignments[socket.id] = {
+            lineRef: targetRef,
+            text,
+            isNew,
+            confirmed: false
+        };
+        state.message = `${getPlayerName(room, socket.id)} updated their line.`;
+        emitProphuntState(roomCode);
+    });
+
+    socket.on("prophunt-confirm-hider", ({ roomCode }) => {
+        const room = rooms[roomCode];
+        if (!room || room.selectedGame !== "programmerProphunt" || !room.prophunt || !room.prophunt.active) {
+            return;
+        }
+
+        const state = room.prophunt;
+        if (state.phase !== "hiding") {
+            return;
+        }
+        if (getPlayerTeam(state, socket.id) !== state.hidingTeam) {
+            return;
+        }
+
+        const assignment = state.hiderAssignments[socket.id];
+        if (!assignment || !assignment.text.trim()) {
+            socket.emit("prophunt-error", "Apply one line edit before confirming.");
+            return;
+        }
+
+        assignment.confirmed = true;
+        const allConfirmed = state.teams[state.hidingTeam].every(playerId => {
+            const entry = state.hiderAssignments[playerId];
+            return entry && entry.confirmed;
+        });
+
+        if (allConfirmed) {
+            finishProphuntHidingPhase(roomCode, false);
+            return;
+        }
+
+        emitProphuntState(roomCode);
+    });
+
+    socket.on("prophunt-confirm-finder", ({ roomCode, lineRef }) => {
+        const room = rooms[roomCode];
+        if (!room || room.selectedGame !== "programmerProphunt" || !room.prophunt || !room.prophunt.active) {
+            return;
+        }
+
+        const state = room.prophunt;
+        if (state.phase !== "finding") {
+            return;
+        }
+        if (getPlayerTeam(state, socket.id) !== state.finderTeam) {
+            return;
+        }
+
+        if (state.finderGuesses[socket.id] && state.finderGuesses[socket.id].confirmed) {
+            socket.emit("prophunt-error", "You already confirmed your guess for this round.");
+            return;
+        }
+
+        const composed = buildProphuntComposedLines(room, state);
+        const exists = composed.some(line => line.ref === lineRef);
+        if (!exists) {
+            socket.emit("prophunt-error", "Choose a valid suspicious line.");
+            return;
+        }
+
+        const takenByOtherFinder = Object.entries(state.finderGuesses).some(([playerId, guess]) => {
+            return playerId !== socket.id && guess && guess.confirmed && guess.lineRef === lineRef;
+        });
+        if (takenByOtherFinder) {
+            socket.emit("prophunt-error", "Another finder already selected that line.");
+            return;
+        }
+
+        state.finderGuesses[socket.id] = {
+            lineRef,
+            confirmed: true
+        };
+
+        const allConfirmed = state.teams[state.finderTeam].every(playerId => {
+            const guess = state.finderGuesses[playerId];
+            return guess && guess.confirmed;
+        });
+
+        if (allConfirmed) {
+            finalizeProphuntRound(roomCode, false);
+            return;
+        }
+
+        emitProphuntState(roomCode);
     });
 
     socket.on("start-bugfixer", payload => {
@@ -948,8 +1556,12 @@ io.on("connection", socket => {
         if (room.bugFixer) {
             clearAllBugFixerTimers(room.bugFixer);
         }
+        if (room.prophunt) {
+            clearProphuntTimers(room.prophunt);
+        }
         room.selectedGame = null;
         room.bugFixer = null;
+        room.prophunt = null;
 
         io.to(roomCode).emit("game-terminated", {
             gameMode: terminatedGame,
@@ -992,6 +1604,29 @@ io.on("connection", socket => {
                             startNextBugFixerRound(code);
                         } else {
                             emitBugFixerState(code);
+                        }
+                    } else if (room.selectedGame === "programmerProphunt") {
+                        if (room.prophunt) {
+                            clearProphuntTimers(room.prophunt);
+                        }
+
+                        if (room.players.length < PROPHUNT_MIN_PLAYERS || room.players.length % 2 !== 0) {
+                            room.prophunt = room.prophunt || {
+                                scores: { A: 0, B: 0 },
+                                timerHandles: { phaseTimeout: null }
+                            };
+                            room.prophunt.active = false;
+                            room.prophunt.message = `Need at least ${PROPHUNT_MIN_PLAYERS} players and an even player count to continue.`;
+                            room.prophunt.lastResultMessage = room.prophunt.message;
+                            emitProphuntState(code);
+                        } else if (room.prophunt && room.prophunt.active) {
+                            room.prophunt.teams = {
+                                A: room.prophunt.teams.A.filter(id => room.players.some(player => player.id === id)),
+                                B: room.prophunt.teams.B.filter(id => room.players.some(player => player.id === id))
+                            };
+                            emitProphuntState(code);
+                        } else {
+                            emitProphuntState(code);
                         }
                     }
 
