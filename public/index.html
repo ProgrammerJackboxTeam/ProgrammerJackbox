@@ -1,113 +1,417 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <title>Simple Lobby</title>
-    <style>
-        body { font-family: Arial; padding: 20px; }
-        .hidden { display: none; }
-        table { border-collapse: collapse; margin-top: 10px; }
-        td, th { border: 1px solid #ccc; padding: 6px 12px; }
-        #gameSelectArea { margin-top: 12px; }
-    </style>
-</head>
-<body>
+    <head>
+        <title>Programmer Jackbox</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
 
-<h2>Enter Your Name</h2>
-<input id="nameInput" type="text" placeholder="Your name">
-<button onclick="submitName()">Continue</button>
+            body {
+                font-family: Arial, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+                padding: 20px;
+            }
 
-<div id="menu" class="hidden">
-    <h2>Main Menu</h2>
-    <button onclick="hostPrivateLobby()">Host Private Lobby</button>
-    <button onclick="joinRandomLobby()">Join Random Public Lobby</button>
-    <button onclick="showJoin()">Join Private Lobby by Code</button>
-</div>
+            .container {
+                background: white;
+                border-radius: 15px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+                padding: 40px;
+                max-width: 650px;
+                width: 100%;
+                margin-top: 20px;
+            }
 
-<div id="joinSection" class="hidden">
-    <h3>Join Private Lobby</h3>
-    <input id="joinCode" type="text" placeholder="Room code">
-    <button onclick="joinLobby()">Join</button>
-    <button onclick="back()">Back</button>
-</div>
+            .hidden {
+                display: none !important;
+            }
 
-<div id="randomJoinSection" class="hidden">
-    <h3>Join Random Public Lobby</h3>
-    <p>Pick one or more games you want to play:</p>
-    <div id="randomGameChecklist"></div>
-    <button onclick="submitRandomJoinPreferences()">Find Public Lobby</button>
-    <button onclick="backToMenu()">Back</button>
-</div>
+            h1,
+            h2,
+            h3 {
+                margin-bottom: 20px;
+                color: #333;
+            }
 
-<div id="hostSection" class="hidden">
-    <h3>Hosting Lobby</h3>
-    <p>Lobby type: <strong id="lobbyTypeLabel">Private</strong></p>
-    <p>Your room code:</p>
-    <h2 id="roomKey"></h2>
+            input,
+            select,
+            button,
+            textarea {
+                padding: 12px;
+                margin: 10px 0;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                font-size: 16px;
+                width: 100%;
+                font-family: Arial, sans-serif;
+            }
 
-    <h3>Players:</h3>
-    <table id="playerTable">
-        <tr><th>Name</th></tr>
-    </table>
+            textarea {
+                resize: vertical;
+                min-height: 80px;
+            }
 
-    <button id="selectGameButton" class="hidden" onclick="showGameSelect()">Select a Game</button>
-    <div id="gameSelectArea" class="hidden">
-        <label for="gameSelect">Game mode:</label>
-        <select id="gameSelect"></select>
-        <button onclick="confirmGameSelect()">Confirm</button>
-        <p id="gameDetails"></p>
-    </div>
-    <p id="selectedGameDisplay" class="hidden"></p>
-    <button id="terminateGameButton" class="hidden" onclick="terminateCurrentGame()">Terminate Current Game</button>
+            button {
+                background: #667eea;
+                color: white;
+                border: none;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
 
-    <div id="bugFixerArea" class="hidden">
-        <h3>Bug Fixer</h3>
-        <p id="bugFixerStatus">Waiting to start.</p>
-        <label for="bugFixerPointsToWinInput">Points to win:</label>
-        <input id="bugFixerPointsToWinInput" type="number" min="1" value="5">
+            button:hover {
+                background: #764ba2;
+            }
 
-        <label for="bugFixerSubmissionSecondsInput">Player submit timer (seconds, 0 = off):</label>
-        <input id="bugFixerSubmissionSecondsInput" type="number" min="0" value="0">
+            button:disabled {
+                background: #ccc;
+                cursor: not-allowed;
+            }
 
-        <label for="bugFixerDeciderSecondsInput">Decider pick timer (seconds, 0 = off):</label>
-        <input id="bugFixerDeciderSecondsInput" type="number" min="0" value="0">
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 20px 0;
+            }
 
-        <label for="bugFixerDeciderTimeoutAction">If decider times out:</label>
-        <select id="bugFixerDeciderTimeoutAction">
-            <option value="no-point">No point awarded</option>
-            <option value="lowest-score">Award point to lowest-score player</option>
-        </select>
+            td,
+            th {
+                border: 1px solid #ddd;
+                padding: 12px;
+                text-align: left;
+            }
 
-        <button id="startBugFixerButton" class="hidden" onclick="startBugFixerGame()">Start Bug Fixer</button>
+            th {
+                background: #667eea;
+                color: white;
+            }
 
-        <p><strong>Decider:</strong> <span id="bugFixerDecider">-</span></p>
-        <p><strong>Prompt:</strong> <span id="bugFixerPrompt">-</span></p>
-        <p><strong>Responses Required:</strong> <span id="bugFixerResponsesRequired">0</span></p>
+            .room-code {
+                font-size: 32px;
+                font-weight: bold;
+                color: #667eea;
+                text-align: center;
+                margin: 20px 0;
+                font-family: monospace;
+                letter-spacing: 4px;
+            }
 
-        <div id="bugFixerHandArea">
-            <h4>Your Hand</h4>
-            <div id="bugFixerHand"></div>
-            <h4>Selected In Order</h4>
-            <div id="bugFixerSelectedOrder"></div>
-            <button id="bugFixerSubmitButton" class="hidden" onclick="submitBugFixerCards()">Submit Selected Card(s)</button>
+            .game-settings {
+                background: #f5f5f5;
+                padding: 20px;
+                border-radius: 5px;
+                margin: 20px 0;
+            }
+
+            .status {
+                background: #e3f2fd;
+                padding: 15px;
+                border-radius: 5px;
+                margin: 15px 0;
+                border-left: 4px solid #667eea;
+            }
+
+            .answer-option {
+                background: #f0f0f0;
+                padding: 15px;
+                margin: 10px 0;
+                border-radius: 5px;
+                cursor: pointer;
+                transition: all 0.3s;
+                border: 2px solid transparent;
+            }
+
+            .answer-option:hover {
+                background: #e0e0e0;
+                border-color: #667eea;
+            }
+
+            .answer-option.selected {
+                background: #667eea;
+                color: white;
+                border-color: #667eea;
+            }
+
+            .code-block {
+                background: #2d2d2d;
+                color: #f8f8f2;
+                padding: 20px;
+                border-radius: 5px;
+                font-family: monospace;
+                white-space: pre-wrap;
+                overflow-x: auto;
+                margin: 20px 0;
+            }
+
+            .button-group {
+                display: flex;
+                gap: 10px;
+                margin-top: 20px;
+            }
+
+            .button-group button {
+                flex: 1;
+            }
+
+            .scores {
+                background: #f5f5f5;
+                padding: 20px;
+                border-radius: 5px;
+                margin: 20px 0;
+            }
+
+            .score-item {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px;
+                border-bottom: 1px solid #ddd;
+            }
+
+            /* Game Hub card grid */
+            .game-mode-cards {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 12px;
+                margin: 20px 0;
+            }
+
+            .game-card {
+                border: 2px solid #ddd;
+                border-radius: 10px;
+                padding: 14px 10px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.2s;
+                background: white;
+            }
+
+            .game-card:hover {
+                border-color: #667eea;
+                background: #f0f0ff;
+            }
+
+            .game-card.selected {
+                border-color: #667eea;
+                background: #667eea;
+                color: white;
+            }
+
+            .game-card.unavailable {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+
+            .game-card .game-icon {
+                font-size: 30px;
+                margin-bottom: 6px;
+            }
+
+            .game-card .game-name {
+                font-weight: bold;
+                font-size: 13px;
+                margin-bottom: 4px;
+            }
+
+            .game-card .game-desc {
+                font-size: 11px;
+                opacity: 0.8;
+            }
+
+            .game-card .game-min {
+                font-size: 11px;
+                margin-top: 6px;
+                opacity: 0.7;
+            }
+
+            #gameSelectArea {
+                margin-top: 12px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <!-- Name Entry -->
+            <div id="nameEntry">
+                <h1>🎮 Programmer Jackbox</h1>
+                <p>Enter your name to continue:</p>
+                <input id="nameInput" type="text" placeholder="Your name" maxlength="20" />
+                <button onclick="submitName()">Continue</button>
+            </div>
+
+            <!-- Main Menu -->
+            <div id="menu" class="hidden">
+                <h2>Main Menu</h2>
+                <button onclick="hostPrivateLobby()">Host Private Lobby</button>
+                <button onclick="joinRandomLobby()">Join Random Public Lobby</button>
+                <button onclick="showJoin()">Join Private Lobby by Code</button>
+                <button onclick="showSinglePlayer()">Single Player Games</button>
+            </div>
+
+            <!-- Single Player Selection -->
+            <div id="singlePlayerSection" class="hidden">
+                <h2>Single Player Games</h2>
+                <div id="singlePlayerCards" class="game-mode-cards"></div>
+                <button onclick="backToMenu()">Back</button>
+            </div>
+
+            <!-- Join by Code -->
+            <div id="joinSection" class="hidden">
+                <h3>Join Private Lobby</h3>
+                <input id="joinCode" type="text" placeholder="Room code (6 characters)" maxlength="6" />
+                <button onclick="joinLobby()">Join</button>
+                <button onclick="backToMenu()">Back</button>
+            </div>
+
+            <!-- Random Join -->
+            <div id="randomJoinSection" class="hidden">
+                <h3>Join Random Public Lobby</h3>
+                <p>Pick one or more games you want to play:</p>
+                <div id="randomGameChecklist"></div>
+                <button onclick="submitRandomJoinPreferences()">Find Public Lobby</button>
+                <button onclick="backToMenu()">Back</button>
+            </div>
+
+            <!-- Lobby — shared by host and joined players -->
+            <div id="hostSection" class="hidden">
+                <h3 id="lobbySectionTitle">Lobby</h3>
+                <p>Lobby type: <strong id="lobbyTypeLabel">Private</strong></p>
+
+                <div id="roomCodeArea">
+                    <p>Share this code with others:</p>
+                    <div class="room-code" id="roomKey"></div>
+                </div>
+
+                <h3>Players:</h3>
+                <table id="playerTable">
+                    <tr>
+                        <th>Name</th>
+                    </tr>
+                </table>
+
+                <p id="lobbyStatusMsg" class="status hidden"></p>
+
+                <button id="selectGameButton" class="hidden" onclick="showGameSelect()">Select a Game</button>
+
+                <p id="selectedGameDisplay" class="hidden"></p>
+                <button id="terminateGameButton" class="hidden" onclick="terminateCurrentGame()">
+                    Terminate Current Game
+                </button>
+
+                <div id="bugFixerArea" class="hidden">
+                    <h3>Bug Fixer</h3>
+                    <p id="bugFixerStatus">Waiting to start.</p>
+
+                    <label for="bugFixerPointsToWinInput">Points to win:</label>
+                    <input id="bugFixerPointsToWinInput" type="number" min="1" value="5" />
+
+                    <label for="bugFixerSubmissionSecondsInput">Player submit timer (seconds, 0 = off):</label>
+                    <input id="bugFixerSubmissionSecondsInput" type="number" min="0" value="0" />
+
+                    <label for="bugFixerDeciderSecondsInput">Decider pick timer (seconds, 0 = off):</label>
+                    <input id="bugFixerDeciderSecondsInput" type="number" min="0" value="0" />
+
+                    <label for="bugFixerDeciderTimeoutAction">If decider times out:</label>
+                    <select id="bugFixerDeciderTimeoutAction">
+                        <option value="no-point">No point awarded</option>
+                        <option value="lowest-score">Award point to lowest-score player</option>
+                    </select>
+
+                    <button id="startBugFixerButton" class="hidden" onclick="startBugFixerGame()">
+                        Start Bug Fixer
+                    </button>
+
+                    <p><strong>Decider:</strong> <span id="bugFixerDecider">-</span></p>
+                    <p><strong>Prompt:</strong> <span id="bugFixerPrompt">-</span></p>
+                    <p><strong>Responses Required:</strong> <span id="bugFixerResponsesRequired">0</span></p>
+
+                    <div id="bugFixerHandArea">
+                        <h4>Your Hand</h4>
+                        <div id="bugFixerHand"></div>
+                        <h4>Selected In Order</h4>
+                        <div id="bugFixerSelectedOrder"></div>
+                        <button id="bugFixerSubmitButton" class="hidden" onclick="submitBugFixerCards()">
+                            Submit Selected Card(s)
+                        </button>
+                    </div>
+
+                    <div id="bugFixerJudgeArea" class="hidden">
+                        <h4>Choose a Winner</h4>
+                        <div id="bugFixerSubmissions"></div>
+                    </div>
+
+                    <h4>Scoreboard</h4>
+                    <ul id="bugFixerScoreboard"></ul>
+
+                    <h4>Last Reveal</h4>
+                    <ul id="bugFixerRevealList"></ul>
+                </div>
+
+                <div id="gameSelectArea" class="hidden">
+                    <label for="gameSelect">Game mode:</label>
+                    <select id="gameSelect"></select>
+                    <button onclick="confirmGameSelect()">Confirm</button>
+                    <p id="gameDetails"></p>
+                </div>
+
+                <div id="codeTyperLobbyControls" class="hidden" style="margin-top: 20px">
+                    <h3>Code Typer Multiplayer</h3>
+                    <p>Race against others to type the snippet the fastest.</p>
+                    <button id="startCodeTyperButton" class="hidden" onclick="startCodeTyperGame()">Launch Game</button>
+                </div>
+
+                <button onclick="back()" style="margin-top: 10px">Leave Lobby</button>
+            </div>
+
+            <!-- Game Hub — Host picks game mode -->
+            <div id="gameHub" class="hidden">
+                <h2>Choose a Game</h2>
+                <p id="gameHubPlayerCount"></p>
+                <div id="gameModeCards" class="game-mode-cards"></div>
+                <div id="gameHubSettings" class="hidden game-settings"></div>
+                <div class="button-group">
+                    <button id="gameHubStartBtn" class="hidden" onclick="launchSelectedGame()">Launch Game</button>
+                    <button onclick="backToLobby()">Back to Lobby</button>
+                </div>
+            </div>
+
+            <!-- Game Hub Waiting — shown to non-host players while host picks -->
+            <div id="gameHubWaiting" class="hidden">
+                <h2>Waiting for Host</h2>
+                <p id="gameHubWaitingMsg">The host is selecting a game...</p>
+                <h3>Players in lobby:</h3>
+                <table id="waitingPlayerTable">
+                    <tr>
+                        <th>Name</th>
+                    </tr>
+                </table>
+            </div>
         </div>
 
-        <div id="bugFixerJudgeArea" class="hidden">
-            <h4>Choose a Winner</h4>
-            <div id="bugFixerSubmissions"></div>
+        <div
+            id="codeTyperArea"
+            class="hidden"
+            style="width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; background: #1a1a1a; z-index: 9999"
+        >
+            <div style="position: absolute; top: 10px; right: 10px; z-index: 10000">
+                <button
+                    style="width: auto; padding: 10px 20px"
+                    onclick="document.getElementById('codeTyperArea').classList.add('hidden')"
+                >
+                    Hide Game
+                </button>
+            </div>
+            <iframe id="codeTyperIframe" src="" style="width: 100%; height: 100%; border: none"></iframe>
         </div>
 
-        <h4>Scoreboard</h4>
-        <ul id="bugFixerScoreboard"></ul>
-
-        <h4>Last Reveal</h4>
-        <ul id="bugFixerRevealList"></ul>
-    </div>
-
-    <button onclick="back()">Close Lobby</button>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script src="client.js"></script>
-
-</body>
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="client.js"></script>
+    </body>
 </html>

@@ -1,17 +1,53 @@
 [
     {
         "name": "bugFixerGame",
+        "displayName": "Bug Fixer",
         "description": "Pitch the best bug-fix strategy card to the decider.",
-        "minPlayers": 3
+        "minPlayers": 3,
+        "launchType": "socket",
+        "icon": "🐛"
+    },
+    {
+        "name": "codeTyperMultiplayer",
+        "displayName": "Code Typer (Versus)",
+        "description": "Race against opponents to type code snippets the fastest.",
+        "minPlayers": 2,
+        "icon": "⚔️"
     },
     {
         "name": "LogicCAH",
-        "description": "Logic-based card prompts with a twist.",
-        "minPlayers": 4
+        "displayName": "Logic CAH",
+        "description": "Logic-based card prompts — answer prompts, decider picks the best.",
+        "minPlayers": 4,
+        "launchType": "socket",
+        "icon": "🃏"
     },
     {
         "name": "programmerProphunt",
-        "description": "Hide-and-seek style game for programmers.",
-        "minPlayers": 4
+        "displayName": "Programmer Prophunt",
+        "description": "Hide suspicious lines of code; finders must spot the hiders.",
+        "minPlayers": 4,
+        "launchType": "socket",
+        "icon": "🔍"
+    },
+    {
+        "name": "codeTyper",
+        "displayName": "Code Typer",
+        "description": "Race to type code snippets as fast and accurately as possible.",
+        "minPlayers": 1,
+        "type": "singleplayer",
+        "launchType": "redirect",
+        "url": "/codeTyper/",
+        "icon": "⌨️"
+    },
+    {
+        "name": "flexboxSpider",
+        "displayName": "Flexbox Spider",
+        "description": "Control a spider with CSS flexbox properties to reach its web.",
+        "minPlayers": 1,
+        "type": "singleplayer",
+        "launchType": "redirect",
+        "url": "/flexboxSpider/",
+        "icon": "🕷️"
     }
 ]
