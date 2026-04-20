@@ -49,5 +49,15 @@
         "launchType": "redirect",
         "url": "/flexboxSpider/",
         "icon": "🕷️"
+    },
+    {
+        "name": "escapeTheLoop",
+        "displayName": "Escape the Loop",
+        "description": "Program a robot to navigate a factory floor using drag-and-drop logic blocks.",
+        "minPlayers": 1,
+        "type": "singleplayer",
+        "launchType": "redirect",
+        "url": "/escapeTheLoop/",
+        "icon": "🤖"
     }
 ]
