@@ -1,3 +1,4 @@
+/* global levels */
 // --- Game State & Level Data ---
 
 let currentLevelIndex = 0;

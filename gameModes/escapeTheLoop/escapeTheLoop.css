@@ -121,8 +121,8 @@ button:disabled {
     background: var(--accent-blue);
     border-radius: 5px;
     position: absolute;
-    top: 6px;
-    left: 6px;
+    top: 9px;
+    left: 9px;
     display: flex;
     justify-content: center;
     align-items: center;
