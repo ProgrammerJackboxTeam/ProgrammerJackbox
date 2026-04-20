@@ -19,7 +19,6 @@ class LogicCAH {
         this.currentDeciderIndex = 0;
         this.roundState = "WAITING_FOR_ANSWERS"; // WAITING_FOR_ANSWERS, SHOWING_ANSWERS, ROUND_COMPLETE
         this.playerAnswers = {}; // { playerId: [answers] }
-        this.deciderChoice = null;
         this.selectedPlayerId = null;
     }
 
@@ -66,11 +65,21 @@ class LogicCAH {
             throw new Error("The decider cannot submit answers");
         }
 
+        if (!Array.isArray(answers)) {
+            throw new Error("Answers must be an array");
+        }
+
         if (answers.length !== this.numPrompts) {
             throw new Error(`Expected ${this.numPrompts} answers, got ${answers.length}`);
         }
 
-        this.playerAnswers[playerId] = answers;
+        const cleanedAnswers = answers.map((answer) => String(answer).trim());
+
+        if (cleanedAnswers.some((answer) => answer.length === 0)) {
+            throw new Error("Answers cannot be blank");
+        }
+
+        this.playerAnswers[playerId] = cleanedAnswers;
 
         // If all answers are in, move to showing answers
         if (this.allAnswersSubmitted()) {
@@ -92,11 +101,19 @@ class LogicCAH {
             throw new Error("Answers are not ready to be shown");
         }
 
-        const nonDeciders = this.getNonDeciders();
-        return nonDeciders.map((player) => ({
+        const nonDeciders = this.getNonDeciders().map((player) => ({
             playerId: player.id,
             answers: this.playerAnswers[player.id],
         }));
+
+        //shuffle answers
+        for (let i = nonDeciders.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [nonDeciders[i], nonDeciders[j]] = [nonDeciders[j], nonDeciders[i]];
+        }
+
+        return nonDeciders;
+
     }
 
     /**
@@ -193,8 +210,13 @@ class LogicCAH {
             totalRounds: this.numRounds,
             currentDecider: this.getCurrentDecider(),
             roundState: this.roundState,
-            scores: this.scores,
+            scores: this.players.map((p) => ({
+                playerId: p.id,
+                name: p.name,
+                score: this.scores[p.id],
+            })),
             isGameOver: this.isGameOver(),
+            numPrompts: this.numPrompts,
         };
     }
 }
