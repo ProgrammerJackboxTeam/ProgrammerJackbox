@@ -1,3 +1,6 @@
+const fs = require("fs");
+const path = require("path");
+
 /**
  * LogicCAH - Logic Cards Against Humanity
  * Core game logic and mechanics
@@ -20,6 +23,89 @@ class LogicCAH {
         this.roundState = "WAITING_FOR_ANSWERS"; // WAITING_FOR_ANSWERS, SHOWING_ANSWERS, ROUND_COMPLETE
         this.playerAnswers = {}; // { playerId: [answers] }
         this.selectedPlayerId = null;
+
+        this.promptDeck = [];
+        this.discardedPrompts = [];
+        this.currentPrompts = [];
+
+        this.loadPrompts();
+        this.currentPromps = this.drawPrompts(this.numPrompts);
+
+    }
+
+    loadPrompts() {
+
+        const cardsPath = path.join(__dirname, "cards.json");
+
+        if (!fs.existsSync(cardsPath)) {
+            throw new Error("cards.json file not found in LogicCAH directory");
+        }
+
+        let data;
+        try {
+            data = JSON.parse(fs.readFileSync(cardsPath, "utf8"));
+        } catch (error) {
+            throw new Error("Error parsing cards.json file");
+        }
+
+        if (!Array.isArray(data.black_cards)) {
+            throw new Error("Invalid cards.json format: 'black_cards' should be an array");
+        }
+    
+        this.promptDeck = data.black_cards
+            .map((prompt) => String(prompt).trim())
+            .filter((prompt) => prompt.length > 0);
+
+        if (this.promptDeck.length < this.numPrompts * this.numRounds) {
+            throw new Error("Not enough prompts in the deck to support the number of rounds and prompts per round");
+        }
+
+        this.shuffle(this.promptDeck);
+
+    }
+
+    //shuffle
+    shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    //draw prompt, recycles from the discard pile is neccessary
+    drawPrompt() {
+        
+        if (this.promptDeck.length === 0) {
+
+            if (this.discardedPrompts.length === 0) {
+
+                return "[No more prompts available]";
+
+            }
+
+            this.promptDeck = [...this.discardPrompts];
+            this.discardedPrompts = [];
+            this.shuffle(this.promptDeck);
+
+        }
+
+        return this.promptDeck.pop();
+
+    }
+
+    drawPrompts(count) {
+
+        const prompts = [];
+
+        for (let i = 0; i < count; i++) {
+
+            const prompt = this.drawPrompt();
+            prompts.push(prompt);
+            
+        }
+
+        return prompts;
+
     }
 
     /**
@@ -163,16 +249,24 @@ class LogicCAH {
      * Complete the current round and move to next
      */
     completeRound() {
+
+        this.discardedPrompts.push(...this.currentPrompts);
         this.currentRound++;
         this.currentDeciderIndex = (this.currentDeciderIndex + 1) % this.players.length;
         this.playerAnswers = {};
         this.selectedPlayerId = null;
         this.roundState = "WAITING_FOR_ANSWERS";
 
+
+        if (!this.isGameOver()) {
+            this.currentPrompts = this.drawPrompts(this.numPrompts);
+        }
+
         return {
             roundComplete: true,
             nextRound: this.currentRound,
             nextDecider: this.getCurrentDecider(),
+            prompts: this.currentPrompts,
         };
     }
 
@@ -191,14 +285,12 @@ class LogicCAH {
             throw new Error("Game is not over yet");
         }
 
-        const standings = this.players
+        return this.players
             .map((p) => ({
                 name: p.name,
                 score: this.scores[p.id],
             }))
             .sort((a, b) => b.score - a.score);
-
-        return standings;
     }
 
     /**
@@ -217,6 +309,8 @@ class LogicCAH {
             })),
             isGameOver: this.isGameOver(),
             numPrompts: this.numPrompts,
+            currentPrompts: this.currentPrompts,
+            timeLimit: this.timeLimit,
         };
     }
 }

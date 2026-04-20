@@ -15,6 +15,7 @@ app.use(express.static("public"));
 app.use("/codeTyper", express.static("gameModes/codeTyper"));
 app.use("/codeTyperMultiplayer", express.static("gameModes/codeTyperMultiplayer"));
 app.use("/flexboxSpider", express.static("gameModes/flexboxSpider"));
+app.use("/logicCAH", express.static("gameModes/LogicCAH"));
 
 const BUG_FIXER_MIN_PLAYERS = 3;
 const BUG_FIXER_HAND_SIZE = 5;
