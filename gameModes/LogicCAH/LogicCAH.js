@@ -29,7 +29,7 @@ class LogicCAH {
         this.currentPrompts = [];
 
         this.loadPrompts();
-        this.currentPromps = this.drawPrompts(this.numPrompts);
+        this.currentPrompts = this.drawPrompts(this.numPrompts);
 
     }
 
@@ -83,7 +83,7 @@ class LogicCAH {
 
             }
 
-            this.promptDeck = [...this.discardPrompts];
+            this.promptDeck = [...this.discardedPrompts];
             this.discardedPrompts = [];
             this.shuffle(this.promptDeck);
 

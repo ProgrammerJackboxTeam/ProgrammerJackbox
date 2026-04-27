@@ -375,15 +375,26 @@ function launchSelectedGame() {
         startBugFixerGame();
     } else if (mode.name === "codeTyperMultiplayer") {
         startCodeTyperGame();
+    } else if (mode.name === "LogicCAH") {
+        const numRounds = parseInt(document.getElementById("numRounds").value);
+        const timeLimit = parseInt(document.getElementById("timeLimit").value);
+        const numPrompts = parseInt(document.getElementById("numPrompts").value);
+
+        const url =
+            `/logicCAH/index.html?roomCode=${encodeURIComponent(currentRoomCode)}` +
+            `&name=${encodeURIComponent(playerName)}` +
+            `&isHost=${isHost}` +
+            `&numRounds=${numRounds}` +
+            `&timeLimit=${timeLimit}` +
+            `&numPrompts=${numPrompts}`;
+
+        socket.emit("launch-redirect-game", { roomCode: currentRoomCode, url });
+        window.location.href = url;
     } else {
         const numRounds = parseInt(document.getElementById("numRounds").value);
         const timeLimit = parseInt(document.getElementById("timeLimit").value);
         const config = { roomCode: currentRoomCode, gameMode: mode.name, numRounds, timeLimit };
-        if (mode.name === "LogicCAH") {
-            config.numPrompts = parseInt(document.getElementById("numPrompts").value);
-        } else {
-            config.complexity = document.getElementById("complexity").value;
-        }
+        config.complexity = document.getElementById("complexity").value;
         socket.emit("start-game", config);
     }
 }
@@ -405,6 +416,25 @@ socket.on("host-left-gamehub", () => {
 });
 
 socket.on("redirect-to-game", ({ url }) => {
+    if (url.startsWith("/logicCAH/")) {
+        const incoming = new URL(url, window.location.origin);
+
+        const numRounds = incoming.searchParams.get("numRounds") || "2";
+        const timeLimit = incoming.searchParams.get("timeLimit") || "30";
+        const numPrompts = incoming.searchParams.get("numPrompts") || "2";
+
+        const fixedUrl =
+            `/logicCAH/index.html?roomCode=${encodeURIComponent(currentRoomCode)}` +
+            `&name=${encodeURIComponent(playerName)}` +
+            `&isHost=${isHost}` +
+            `&numRounds=${encodeURIComponent(numRounds)}` +
+            `&timeLimit=${encodeURIComponent(timeLimit)}` +
+            `&numPrompts=${encodeURIComponent(numPrompts)}`;
+
+        window.location.href = fixedUrl;
+        return;
+    }
+
     window.location.href = url;
 });
 

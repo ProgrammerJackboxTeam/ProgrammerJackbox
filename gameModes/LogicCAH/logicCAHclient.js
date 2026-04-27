@@ -19,7 +19,36 @@ const statusLabelEl = document.getElementById("status-label");
 const timerLabelEl = document.getElementById("timer-label");
 const dynamicContainerEl = document.getElementById("dynamic-container");
 
+const startGameBtn = document.getElementById("start-game-btn");
+
+const numRounds = parseInt(urlParams.get("numRounds") || "2");
+const timeLimit = parseInt(urlParams.get("timeLimit") || "30");
+const numPrompts = parseInt(urlParams.get("numPrompts") || "2");
+
+if (isHost) {
+    startGameBtn.style.display = "inline-block";
+} else {
+    startGameBtn.style.display = "none";
+}
+
+startGameBtn.onclick = () => {
+    socket.emit("start-game", {
+        roomCode,
+        gameMode: "LogicCAH",
+        numRounds,
+        timeLimit,
+        numPrompts,
+    });
+
+    startGameBtn.style.display = "none";
+};
+
 roomInfoEl.textContent = `Room: ${roomCode} | Player: ${playerName} ${isHost ? "(Host)" : ""}`;
+
+socket.emit("logiccah-rejoin-room", {
+    roomCode,
+    name: playerName,
+});
 
 function clearDynamic() {
 
@@ -44,11 +73,11 @@ function isCurrentDecider(status) {
 
 }
 
-function rednerScoreboard(status) {
+function renderScoreboard(status) {
 
     if (!status || !Array.isArray(status.scores)) {
 
-        scoreboardEl.taxtContent = "No score data yet.";
+        scoreboardEl.textContent = "No score data yet.";
         return;
 
     }
@@ -127,7 +156,7 @@ function renderAnswerForm(status) {
 
         const label = document.createElement("div");
         label.className = "prompt-label";
-        label.textContent = 'Prompt ${index + 1}: ${prompt}';
+        label.textContent = `Prompt ${index + 1}: ${prompt}`;
 
         const textarea = document.createElement("textarea");
         textarea.className = "answer-box";
@@ -146,7 +175,8 @@ function renderAnswerForm(status) {
 
     const submitBtn = document.createElement("button");
     submitBtn.className = "primary-btn";
-    submitBtn.onClick = () => {
+    submitBtn.textContent = "Submit Answers";
+    submitBtn.onclick = () => {
 
         const answers = textareas.map((box) => box.value.trim());
         socket.emit("submit-answers", { roomCode, answers });
@@ -183,7 +213,7 @@ function renderDeciderChoices(answerSets) {
 
         const block = document.createElement("div");
         block.className = "submission-block";
-        block.ineerHTML = submission.answers
+        block.innerHTML = submission.answers
             .map((answer, i) => `${i + 1}. ${escapeHtml(answer)}`)
             .join("<br><br>");
 
@@ -193,7 +223,7 @@ function renderDeciderChoices(answerSets) {
         chooseBtn.className = "choice-btn";
         chooseBtn.textContent = "Choose this submission";
 
-        chooseBtn.onClick = () => {
+        chooseBtn.onclick = () => {
             
             socket.emit("decider-select", {
                 roomCode,
@@ -215,7 +245,7 @@ function renderRound(status) {
 
     currentStatus = status;
 
-    rednerScoreboard(status);
+    renderScoreboard(status);
     renderPrompts(status);
 
     const decider = isCurrentDecider(status);
@@ -291,26 +321,34 @@ function renderGameOver(finalScores) {
 //socket events
 
 socket.on("game-started", ({ gameMode, status }) => {
-    if (gameMode !== "logicCAH") {
+    console.log("game-started received:", gameMode, status);
+
+    if (gameMode !== "LogicCAH") {
         return;
     }
+
+    // hide start button once game begins
+    if (startGameBtn) {
+        startGameBtn.style.display = "none";
+    }
+
     renderRound(status);
 });
 
-socket.on("answers-submitted", () => {
-
+socket.on("answers-submitted", ({ playerId, allSubmitted }) => {
     if (!currentStatus) return;
 
     if (isCurrentDecider(currentStatus)) {
-
-        renderWaiting("A player submitted answers. Waiting for the rest...");
-
+        renderWaiting(
+            allSubmitted
+                ? "All answers submitted. Loading submissions..."
+                : "A player submitted answers. Waiting for the rest..."
+        );
+        return;
     }
 
-    else {
-
+    if (playerId === socket.id) {
         renderWaiting("Answers submitted. Waiting for the rest of the round.");
-
     }
 
 });
@@ -319,7 +357,7 @@ socket.on("show-answers", ({ answers, deciderName }) => {
 
     if (isCurrentDecider(currentStatus)) {
 
-        infoLabelEl. textContent = `Current decider: ${deciderName}`;
+        infoLabelEl.textContent = `Current decider: ${deciderName}`;
         renderDeciderChoices(answers);
 
     }
@@ -335,7 +373,7 @@ socket.on("show-answers", ({ answers, deciderName }) => {
 socket.on("selected-player-revealed", ({ selectedPlayerName, points }) => {
 
     clearDynamic();
-    statusLabelEl.textContent = '${selectedPlayerName} wins the round!';
+    statusLabelEl.textContent = `${selectedPlayerName} wins the round!`;
     timerLabelEl.textContent = "";
 
     const card = document.createElement("div");
@@ -350,7 +388,7 @@ socket.on("selected-player-revealed", ({ selectedPlayerName, points }) => {
 
 });
 
-socket.on("round-complete", ({ status }) => {
+socket.on("round-completed", ({ status }) => {
 
     renderRound(status);
 
@@ -366,4 +404,26 @@ socket.on("error", (message) => {
 
     alert(message);
 
+});
+
+//debugging logs
+
+console.log("CAH client loaded");
+
+console.log("roomCode =", roomCode, "playerName =", playerName, "isHost =", isHost);
+
+socket.emit("logiccah-rejoin-room", {
+    roomCode,
+    name: playerName,
+    isHost,
+});
+console.log("emitted logiccah-rejoin-room");
+
+socket.on("game-started", ({ gameMode, status }) => {
+    console.log("game-started received:", gameMode, status);
+    if (gameMode !== "LogicCAH") {
+        console.log("ignored because gameMode did not match");
+        return;
+    }
+    renderRound(status);
 });
