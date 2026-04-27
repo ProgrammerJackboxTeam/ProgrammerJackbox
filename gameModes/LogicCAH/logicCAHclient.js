@@ -321,13 +321,11 @@ function renderGameOver(finalScores) {
 //socket events
 
 socket.on("game-started", ({ gameMode, status }) => {
-    console.log("game-started received:", gameMode, status);
 
     if (gameMode !== "LogicCAH") {
         return;
     }
 
-    // hide start button once game begins
     if (startGameBtn) {
         startGameBtn.style.display = "none";
     }
@@ -410,19 +408,15 @@ socket.on("error", (message) => {
 
 console.log("CAH client loaded");
 
-console.log("roomCode =", roomCode, "playerName =", playerName, "isHost =", isHost);
 
 socket.emit("logiccah-rejoin-room", {
     roomCode,
     name: playerName,
     isHost,
 });
-console.log("emitted logiccah-rejoin-room");
 
 socket.on("game-started", ({ gameMode, status }) => {
-    console.log("game-started received:", gameMode, status);
     if (gameMode !== "LogicCAH") {
-        console.log("ignored because gameMode did not match");
         return;
     }
     renderRound(status);
