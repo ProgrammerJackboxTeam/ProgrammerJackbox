@@ -18,7 +18,6 @@ let gameActive = false;
 // Per-second tracking for the chart
 let wpmHistory = []; // { sec, wpm, rawWpm, errors }
 let totalKeystrokes = 0;
-let totalErrors = 0;
 
 const displayEl = document.getElementById("code-display");
 
@@ -33,7 +32,6 @@ function newGame() {
     gameActive = true;
     wpmHistory = [];
     totalKeystrokes = 0;
-    totalErrors = 0;
 
     let next;
     do {
@@ -112,14 +110,16 @@ document.addEventListener("keydown", (e) => {
             totalKeystrokes += count;
         }
     } else if (e.key === "Enter") {
-        typed += "\n";
-        totalKeystrokes++;
-    } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-        typed += e.key;
-        totalKeystrokes++;
-        if (typed.length <= code.length && typed[typed.length - 1] !== code[typed.length - 1]) {
-            totalErrors++;
+        if (typed.length < code.length) {
+            typed += "\n";
+            totalKeystrokes++;
         }
+    } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+        if (typed.length < code.length) {
+            typed += e.key;
+            totalKeystrokes++;
+        }
+        // no-op: error tracking handled per-frame in refreshStats
     } else {
         return;
     }

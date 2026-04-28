@@ -63,7 +63,6 @@ let timerInterval = null;
 let started = false;
 let typed = "";
 let gameActive = false;
-let totalErrors = 0;
 
 const displayEl = document.getElementById("code-display");
 
@@ -74,7 +73,10 @@ function resetMatch() {
     started = false;
     typed = "";
     gameActive = true;
-    totalErrors = 0;
+
+    // Clean up stale error message from previous round
+    const staleErr = document.getElementById("err-label-msg");
+    if (staleErr) staleErr.remove();
 
     renderCode();
     updateNextKey();
@@ -149,12 +151,10 @@ document.addEventListener("keydown", (e) => {
             typed += " ".repeat(count);
         }
     } else if (e.key === "Enter") {
-        typed += "\n";
+        if (typed.length < code.length) typed += "\n";
     } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-        typed += e.key;
-        if (typed.length <= code.length && typed[typed.length - 1] !== code[typed.length - 1]) {
-            totalErrors++;
-        }
+        if (typed.length < code.length) typed += e.key;
+        // no-op: error tracking handled per-frame
     } else {
         return;
     }
