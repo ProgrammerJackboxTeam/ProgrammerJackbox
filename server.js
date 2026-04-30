@@ -11,11 +11,18 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+//for cah rejoin
+const ROOM_REJOIN_GRACE_MS = 5000;
+
 app.use(express.static("public"));
 app.use("/codeTyper", express.static("gameModes/codeTyper"));
 app.use("/codeTyperMultiplayer", express.static("gameModes/codeTyperMultiplayer"));
 app.use("/flexboxSpider", express.static("gameModes/flexboxSpider"));
+<<<<<<< HEAD
 app.use("/escapeTheLoop", express.static("gameModes/escapeTheLoop"));
+=======
+app.use("/logicCAH", express.static("gameModes/LogicCAH"));
+>>>>>>> paul-cah-game
 
 const BUG_FIXER_MIN_PLAYERS = 3;
 const BUG_FIXER_HAND_SIZE = 5;
@@ -635,6 +642,7 @@ function createRoom({ hostId, hostName, visibility = "private", selectedGame = n
         selectedGame,
         visibility,
         bugFixer: null,
+        pendingDeleteTimeout: null,
     };
     return roomCode;
 }
@@ -1002,6 +1010,51 @@ io.on("connection", (socket) => {
         });
     });
 
+    //CAH rejoin handler
+    socket.on("logiccah-rejoin-room", ({ roomCode, name, isHost }) => {
+        const room = rooms[roomCode];
+        console.log("logiccah-rejoin-room received", roomCode, name);
+
+        if (!room) {
+            console.log("room not found for", roomCode);
+            return;
+        }
+
+        socket.join(roomCode);
+
+        if (isHost) {
+            room.host = socket.id;
+        }
+
+        let player = room.players.find((p) => p.name === name);
+
+        if (!player) {
+            room.players.push({ id: socket.id, name });
+        } else {
+            const oldId = player.id;
+            player.id = socket.id;
+
+            if (room.host === oldId) {
+                room.host = socket.id;
+            }
+        }   
+
+        if (room.game && Array.isArray(room.game.players)) {
+            const gamePlayer = room.game.players.find((p) => p.name === name);
+            if (gamePlayer) {
+                gamePlayer.id = socket.id;
+            }
+        }
+
+        if (room.game && room.gameMode === "LogicCAH") {
+            socket.emit("game-started", {
+                gameMode: "LogicCAH",
+                gameState: room.gameState,
+                status: room.game.getGameStatus(),
+            });
+        }
+    });
+
     socket.on("submit-answers", ({ roomCode, answers }) => {
         const room = rooms[roomCode];
         if (!room || !room.game || room.gameMode !== "LogicCAH") return;
@@ -1141,8 +1194,8 @@ io.on("connection", (socket) => {
     socket.on("launch-redirect-game", ({ roomCode, url }) => {
         const room = rooms[roomCode];
         if (!room || room.host !== socket.id) return;
-        const allowed = ["/codeTyper/", "/flexboxSpider/"];
-        if (!allowed.includes(url)) return;
+        const allowed = ["/codeTyper/", "/flexboxSpider/", "/logicCAH/"];
+        if (!allowed.some((allowedUrl) => url.startsWith(allowedUrl))) return;
         socket.to(roomCode).emit("redirect-to-game", { url });
     });
 
@@ -1207,7 +1260,7 @@ io.on("connection", (socket) => {
                 room.players.splice(index, 1);
 
                 if (room.players.length === 0) {
-                    delete rooms[code];
+                    console.log("Keeping empty room alive for game page reconnect:", code);
                 } else {
                     if (room.host === socket.id) {
                         room.host = room.players[0].id;
@@ -1243,6 +1296,7 @@ io.on("connection", (socket) => {
             }
         }
     });
+
 });
 
 const PORT = process.env.PORT || 3000;
