@@ -18,11 +18,8 @@ app.use(express.static("public"));
 app.use("/codeTyper", express.static("gameModes/codeTyper"));
 app.use("/codeTyperMultiplayer", express.static("gameModes/codeTyperMultiplayer"));
 app.use("/flexboxSpider", express.static("gameModes/flexboxSpider"));
-<<<<<<< HEAD
 app.use("/escapeTheLoop", express.static("gameModes/escapeTheLoop"));
-=======
 app.use("/logicCAH", express.static("gameModes/LogicCAH"));
->>>>>>> paul-cah-game
 
 const BUG_FIXER_MIN_PLAYERS = 3;
 const BUG_FIXER_HAND_SIZE = 5;
