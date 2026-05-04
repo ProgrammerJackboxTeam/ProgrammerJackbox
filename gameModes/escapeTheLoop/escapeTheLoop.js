@@ -1,5 +1,5 @@
-/* global levels */
 // --- Game State & Level Data ---
+const levels = typeof window !== 'undefined' && window.levels ? window.levels : (typeof module !== 'undefined' ? require('./levels.js') : []);
 
 let currentLevelIndex = 0;
 let bot = { x: 0, y: 0, dir: 0 }; 
@@ -7,12 +7,17 @@ let isRunning = false;
 let isLevelComplete = false;
 
 // UI Elements
-const gridContainer = document.getElementById('grid-container');
-const gameStatus = document.getElementById('game-status');
-const levelIndicator = document.getElementById('level-indicator');
-const scriptContainer = document.getElementById('script-container');
-const btnRun = document.getElementById('btn-run');
-const btnClear = document.getElementById('btn-clear');
+let gridContainer, gameStatus, levelIndicator, scriptContainer, btnRun, btnClear;
+
+function initUI() {
+    gridContainer = document.getElementById('grid-container');
+    gameStatus = document.getElementById('game-status');
+    levelIndicator = document.getElementById('level-indicator');
+    scriptContainer = document.getElementById('script-container');
+    btnRun = document.getElementById('btn-run');
+    btnClear = document.getElementById('btn-clear');
+}
+initUI();
 
 const DIR_MAP = {
     0: { dx: 0, dy: -1 },
@@ -318,4 +323,22 @@ function parseCommands(container) {
 btnRun.addEventListener('click', runScript);
 
 // Init
-loadLevel(0);
+if (typeof module === 'undefined') {
+    // Only auto-load if in browser
+    if (typeof levels !== 'undefined') loadLevel(0);
+} else {
+    module.exports = {
+        loadLevel,
+        renderGrid,
+        updateBotVisual,
+        runScript,
+        parseCommands,
+        clearScript,
+        bot,
+        setIsRunning: (v) => isRunning = v,
+        setCurrentLevel: (v) => currentLevelIndex = v,
+        getCurrentLevel: () => currentLevelIndex,
+        getBot: () => bot,
+        getIsComplete: () => isLevelComplete
+    };
+}
