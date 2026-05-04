@@ -1,12 +1,14 @@
 let snippets = [];
 let currentSnippet = null;
 
-fetch("/codeTyper/snippets.json")
-    .then((res) => res.json())
-    .then((data) => {
-        snippets = data;
-        newGame();
-    });
+if (typeof fetch !== "undefined" && typeof window !== "undefined") {
+    fetch("/codeTyper/snippets.json")
+        .then((res) => res.json())
+        .then((data) => {
+            snippets = data;
+            newGame();
+        }).catch(err => console.error("fetch err", err));
+}
 
 let startTime = null;
 let timerInterval = null;
@@ -19,7 +21,17 @@ let gameActive = false;
 let wpmHistory = []; // { sec, wpm, rawWpm, errors }
 let totalKeystrokes = 0;
 
-const displayEl = document.getElementById("code-display");
+let displayEl = null;
+
+function initUI() {
+    displayEl = document.getElementById("code-display");
+}
+
+if (typeof window !== 'undefined') {
+    document.addEventListener("DOMContentLoaded", initUI);
+    // If DOM is already loaded
+    if (document.readyState !== 'loading') initUI();
+}
 
 function newGame() {
     clearInterval(timerInterval);
@@ -415,3 +427,21 @@ window.addEventListener("keyup", (e) => {
     const val = e.key === " " ? " " : e.key.length === 1 ? e.key.toLowerCase() : e.key;
     document.querySelectorAll(`.key[data-key="${CSS.escape(val)}"]`).forEach((k) => k.classList.remove("pressed"));
 });
+
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+        newGame,
+        sampleWpm,
+        refreshStats,
+        finishGame,
+        charToKey,
+        updateNextKey,
+        initUI,
+        setSnippets: (s) => snippets = s,
+        getTyped: () => typed,
+        setTyped: (t) => typed = t,
+        getCurrentSnippet: () => currentSnippet,
+        setCurrentSnippet: (s) => currentSnippet = s,
+        setGameActive: (a) => gameActive = a,
+    };
+}
