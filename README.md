@@ -1,59 +1,83 @@
 # ProgrammerJackbox
 
-## Overview
+## Description
 
-ProgrammerJackbox is a local multiplayer game server using Express and Socket.IO. It supports two game modes:
+ProgrammerJackbox is a local multiplayer game server built with Express and Socket.IO. Players join a shared room by code — one player hosts, others join using the room code.
 
-- `LogicCAH`: logic-based prompt/answer selection game like Cards Against Humanity.
-- `ProgrammerProphunt`: coders hide in code lines and finders guess the hidden player.
+The server supports the following game modes:
 
-Players join a shared room by code; one player hosts, others join by room code.
+- **LogicCAH** — Logic-based prompt/answer selection game, inspired by Cards Against Humanity.
+- **ProgrammerProphunt** — Coders hide in code lines and finders guess the hidden player.
+- **CodeTyper** — Single-player speed-typing challenge with code snippets.
+- **CodeTyper Multiplayer** — Competitive multiplayer code-typing race.
+- **Escape the Loop** — Single-player grid puzzle where you program a robot to escape.
+- **Flexbox Spider** — CSS Flexbox-based puzzle game.
+- **Bug Fixer** — Find and fix bugs in code snippets.
+- **Optimizer** — Optimize code to meet performance targets.
+
+## Setup and Installation
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18 or later recommended)
+- npm (included with Node.js)
+
+### Installation
+
+```bash
+git clone https://github.com/BenBank11/ProgrammerJackbox.git
+cd ProgrammerJackbox
+npm install
+```
+
+## Running Locally
+
+The server binds to `0.0.0.0` by default, making it accessible to other devices on the same local network.
+
+- **Local access:** `http://localhost:3000`
+- **LAN access:** Use the host machine's local IP (e.g. `http://192.168.1.x:3000`). Other devices on the same Wi-Fi/LAN can connect using this address.
+
+> **Note:** Ensure your firewall allows inbound connections on the configured port.
+
+## Deployment
+
+This project can be deployed as a **Web Service** on [Render](https://render.com):
+
+1. Connect your GitHub repository to Render.
+2. Create a new **Web Service** with the following settings:
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+3. Render automatically sets the `PORT` environment variable — no manual configuration needed.
+4. Once deployed, Render provides a public `.onrender.com` URL for access.
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Port the server listens on | `3000` |
+
+No `.env` file is required for local development. If you need to override the port, set the variable before starting the server:
+
+```bash
+PORT=8080 npm start
+```
+
+## Architecture Overview
+
+TODO
 
 ## Project Structure
 
-- `server.js` - Express + Socket.IO backend. Handles room lifecycle, game actions, and real-time events.
-- `public/` - client-side web app, including `client.js` and `index.html`.
-- `gameModes/LogicCAH/LogicCAH.js` - rules and state management for LogicCAH.
-- `gameModes/programmerProphunt/ProgrammerProphunt.js` - rules and state management for ProgrammerProphunt.
+TODO
 
-## Features Implemented
+## Known Issues and Limitations
 
-- Host creates a room with random 6-character code (uppercase alphanumeric).
-- Join room by code + name, with existence check.
-- Player list sync using `update-players` event.
-- Host can start game with custom settings (rounds/time limit/complexity/prompts).
-- LogicCAH flow:
-    - players submit answers
-    - decider picks best answer
-    - selected player gets points
-    - round progression and game over state.
-- ProgrammerProphunt flow:
-    - hiders submit code lines
-    - finders select hidden line
-    - scoring and round progression.
-- Graceful disconnect handling with player removal and room cleanup.
+TODO
 
-## Network Accessibility
+## Future Work
 
-- Server listens on `0.0.0.0:3000` for LAN access.
-- Default local page: `http://localhost:3000`.
-- Use host machine IP (e.g. `http://192.168.1.193:3000`) for other devices on same network.
-- No public internet access by default unless you configure router port forwarding.
+TODO
 
-## Security Notes
+## Additional Documentation
 
-- Room code is only shared key for joining.
-- No password / blocking currently implemented.
-- Keep server local to avoid external access risk.
-
-## Setup and Run
-
-```bash
-npm install
-node server.js
-```
-
-1. Confirmed `server.js` behavior and room/join logic.
-2. Updated server binding to `0.0.0.0` (external LAN available).
-3. Guided firewall setup and correct LAN IP discovery (`192.168.1.193`).
-4. Diagnosed and fixed connection issue (`ERR_CONNECTION_TIMED_OUT` from wrong IP / blocked port).
+TODO
