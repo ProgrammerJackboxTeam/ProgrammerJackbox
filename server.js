@@ -690,6 +690,18 @@ function emitRoomUpdate(roomCode) {
 io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
+    socket.on("lobby-chat", ({ roomCode, name, message }) => {
+        const room = rooms[roomCode];
+        if (!room) return;
+        io.to(room.id).emit("lobby-chat", { name, message });
+    });
+
+    socket.on("lobby-reaction", ({ roomCode, name, emoji }) => {
+        const room = rooms[roomCode];
+        if (!room) return;
+        io.to(room.id).emit("lobby-reaction", { name, emoji });
+    });
+
     socket.on("host-room", (payload) => {
         const rawName = typeof payload === "object" && payload !== null ? payload.name : payload;
         const visibility =

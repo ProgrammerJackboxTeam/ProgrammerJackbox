@@ -1,4 +1,14 @@
-const socket = io();
+const socket = (() => {
+    try {
+        return window.io ? io() : null;
+    } catch (err) {
+        return null;
+    }
+})() || {
+    emit: () => {},
+    on: () => {},
+    id: "",
+};
 
 // ============================================
 // LOBBY STATE
@@ -12,6 +22,35 @@ let lastPlayerCount = 0;
 let selectedGameMode = "";
 let bugFixerState = null;
 let bugFixerSelectedCards = [];
+
+const STORAGE_KEY_NAME = "pjboxPlayerName";
+const STORAGE_KEY_ROOMS = "pjboxRecentRooms";
+
+function savePlayerName(name) {
+    localStorage.setItem(STORAGE_KEY_NAME, name);
+}
+
+function addRecentRoom(code) {
+    const normalized = code.toUpperCase();
+    const rooms = JSON.parse(localStorage.getItem(STORAGE_KEY_ROOMS) || "[]");
+    const next = [normalized, ...rooms.filter((room) => room !== normalized)].slice(0, 5);
+    localStorage.setItem(STORAGE_KEY_ROOMS, JSON.stringify(next));
+    if (typeof renderRecentRooms === "function") {
+        renderRecentRooms();
+    }
+}
+
+function restorePersistentState() {
+    const savedName = localStorage.getItem(STORAGE_KEY_NAME);
+    if (savedName) {
+        const input = document.getElementById("nameInput");
+        if (input) input.value = savedName;
+        const hint = document.getElementById("lastNameHint");
+        if (hint) hint.textContent = `Last used: ${savedName}`;
+    }
+}
+
+restorePersistentState();
 
 fetch("/gamemodes.json")
     .then((response) => response.json())
@@ -34,6 +73,9 @@ function submitName() {
         return;
     }
     playerName = name;
+    savePlayerName(name);
+    const hint = document.getElementById("lastNameHint");
+    if (hint) hint.textContent = `Last used: ${name}`;
     document.getElementById("nameEntry").classList.add("hidden");
     document.getElementById("menu").classList.remove("hidden");
 }
@@ -111,6 +153,7 @@ function joinLobby() {
         return;
     }
     socket.emit("join-room", { roomCode: code, name: playerName });
+    addRecentRoom(code);
 }
 
 function back() {
