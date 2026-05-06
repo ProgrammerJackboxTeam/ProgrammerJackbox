@@ -115,3 +115,9 @@ const levels = [
         ]
     }
 ];
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = levels;
+} else if (typeof window !== 'undefined') {
+    window.levels = levels;
+}

@@ -1,31 +1,45 @@
-const socket = io();
+const socket = typeof io !== 'undefined' ? io() : { emit: () => {}, on: () => {}, id: "test" };
 
-const urlParams = new URLSearchParams(window.location.search);
+let urlParams;
+if (typeof window !== 'undefined') {
+    urlParams = new URLSearchParams(window.location.search);
+} else {
+    urlParams = new URLSearchParams("?roomCode=test&name=p1&isHost=true");
+}
 const roomCode = urlParams.get("roomCode");
 const playerName = urlParams.get("name");
 const isHost = urlParams.get("isHost") === "true";
 
-if (!roomCode || !playerName) {
-    window.location.href = "/";
+if (typeof window !== 'undefined') {
+    if (!roomCode || !playerName) {
+        window.location.href = "/";
+    }
 }
 
-document.getElementById("room-info").innerText = `Room: ${roomCode} | Player: ${playerName}`;
+if (typeof document !== 'undefined') {
+    const rmInfo = document.getElementById("room-info");
+    if (rmInfo) rmInfo.innerText = `Room: ${roomCode} | Player: ${playerName}`;
 
-if (isHost) {
-    document.getElementById("btn-start").classList.remove("hidden");
-    document.getElementById("btn-next").classList.remove("hidden");
+    if (isHost) {
+        const bs = document.getElementById("btn-start");
+        const bn = document.getElementById("btn-next");
+        if (bs) bs.classList.remove("hidden");
+        if (bn) bn.classList.remove("hidden");
+    }
 }
 
 let snippets = [];
 let currentSnippet = null;
 let opponents = {};
 
-fetch("/codeTyperMultiplayer/snippets.json")
-    .then((res) => res.json())
-    .then((data) => {
-        snippets = data;
-        socket.emit("codetyper-rejoin-room", { roomCode, name: playerName });
-    });
+if (typeof fetch !== "undefined") {
+    fetch("/codeTyperMultiplayer/snippets.json")
+        .then((res) => res.json())
+        .then((data) => {
+            snippets = data;
+            socket.emit("codetyper-rejoin-room", { roomCode, name: playerName });
+        });
+}
 
 socket.on("codetyper-set-snippet", (snippet) => {
     currentSnippet = snippet;
@@ -64,7 +78,11 @@ let started = false;
 let typed = "";
 let gameActive = false;
 
-const displayEl = document.getElementById("code-display");
+let displayEl = null;
+
+if (typeof document !== 'undefined') {
+    displayEl = document.getElementById("code-display");
+}
 
 function resetMatch() {
     clearInterval(timerInterval);
@@ -281,3 +299,16 @@ window.addEventListener("keyup", (e) => {
     const val = e.key === " " ? " " : e.key.length === 1 ? e.key.toLowerCase() : e.key;
     document.querySelectorAll(`.key[data-key="${CSS.escape(val)}"]`).forEach((k) => k.classList.remove("pressed"));
 });
+
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+        charToKey,
+        updateNextKey,
+        resetMatch,
+        refreshStats,
+        finishGame,
+        setSnippets: (s) => snippets = s,
+        getCurrentSnippet: () => currentSnippet,
+        setCurrentSnippet: (s) => currentSnippet = s
+    };
+}
