@@ -7,6 +7,12 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "start": "node server.js",
         "dev": "node --watch server.js",
+        "sim:bugfixer": "node tools/simulateBugFixer.js",
+        "sim:prophunt": "node tools/simulateProgrammerProphunt.js",
+        "sim:all": "npm run sim:bugfixer && npm run sim:prophunt",
+        "sim:bugfixer:online": "node tools/simulateBugFixer.js",
+        "sim:prophunt:online": "node tools/simulateProgrammerProphunt.js",
+        "sim:all:online": "npm run sim:bugfixer:online && npm run sim:prophunt:online",
         "lint": "eslint .",
         "format": "prettier --write ."
     },

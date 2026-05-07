@@ -20,6 +20,10 @@ const BUG_FIXER_MIN_PLAYERS = 3;
 const BUG_FIXER_HAND_SIZE = 5;
 const BUG_FIXER_FINALIZE_DELAY_MS = 10000;
 const PROPHUNT_MIN_PLAYERS = 4;
+const ROOM_IDLE_TTL_MS = 30 * 60 * 1000;
+const ROOM_SOFT_CLEANUP_TTL_MS = 10 * 60 * 1000;
+const ROOM_JANITOR_INTERVAL_MS = 60 * 1000;
+const CLEANUP_ARCHIVE_LIMIT = 200;
 
 const PROPHUNT_SNIPPETS = {
     easy: [
@@ -145,6 +149,207 @@ const gameModesData = loadGameModes();
 const validGameModeNames = new Set(gameModesData.map((entry) => entry && entry.name).filter(Boolean));
 
 const rooms = {}; // { ROOMCODE: { host, players, selectedGame, visibility, bugFixer } }
+const cleanupArchive = [];
+
+function appendCleanupArchive(entry) {
+    cleanupArchive.push({ ...entry, at: Date.now() });
+    if (cleanupArchive.length > CLEANUP_ARCHIVE_LIMIT) {
+        cleanupArchive.splice(0, cleanupArchive.length - CLEANUP_ARCHIVE_LIMIT);
+    }
+}
+
+function clearRoomTimers(room) {
+    if (!room) {
+        return;
+    }
+    if (room.bugFixer) {
+        clearAllBugFixerTimers(room.bugFixer);
+    }
+    if (room.prophunt) {
+        clearProphuntTimers(room.prophunt);
+    }
+}
+
+function touchRoom(room, reason = "activity") {
+    if (!room) {
+        return;
+    }
+    room.lastActivityAt = Date.now();
+    room.lastActivityReason = reason;
+}
+
+function touchRoomByCode(roomCode, reason = "activity") {
+    const room = rooms[roomCode];
+    if (!room) {
+        return;
+    }
+    touchRoom(room, reason);
+}
+
+function isRoomGameActive(room) {
+    if (!room) {
+        return false;
+    }
+    if (room.bugFixer && room.bugFixer.active) {
+        return true;
+    }
+    if (room.prophunt && room.prophunt.active) {
+        return true;
+    }
+    if (room.gameState === "PLAYING") {
+        return true;
+    }
+    return false;
+}
+
+function pruneRoomTransientData(roomCode) {
+    const room = rooms[roomCode];
+    if (!room) {
+        return;
+    }
+
+    const validPlayerIds = new Set((room.players || []).map((player) => player.id));
+
+    if (room.codeTyperMultiplayer && room.codeTyperMultiplayer.players) {
+        Object.keys(room.codeTyperMultiplayer.players).forEach((id) => {
+            if (!validPlayerIds.has(id)) {
+                delete room.codeTyperMultiplayer.players[id];
+            }
+        });
+
+        if (Object.keys(room.codeTyperMultiplayer.players).length === 0) {
+            delete room.codeTyperMultiplayer;
+            appendCleanupArchive({ roomCode, action: "pruned-codetyper-cache" });
+        }
+    }
+
+    const idleMs = Date.now() - (room.lastActivityAt || Date.now());
+    if (idleMs >= ROOM_SOFT_CLEANUP_TTL_MS && !isRoomGameActive(room)) {
+        if (room.gameState === "LOBBY" || !room.selectedGame) {
+            room.game = null;
+            room.gameMode = null;
+            if (!room.selectedGame) {
+                room.bugFixer = null;
+                room.prophunt = null;
+            }
+        }
+    }
+}
+
+function removeSocketFromRooms(socketId, reason = "disconnect") {
+    for (const code in rooms) {
+        const room = rooms[code];
+
+        if (room.codeTyperMultiplayer && room.codeTyperMultiplayer.players[socketId]) {
+            delete room.codeTyperMultiplayer.players[socketId];
+            io.to(code).emit("codetyper-progress-update", room.codeTyperMultiplayer.players);
+        }
+
+        const index = room.players.findIndex((p) => p.id === socketId);
+
+        if (index !== -1) {
+            room.players.splice(index, 1);
+            touchRoom(room, `player-${reason}`);
+
+            if (room.players.length === 0) {
+                clearRoomTimers(room);
+                appendCleanupArchive({ roomCode: code, action: "removed-empty-room", reason });
+                delete rooms[code];
+            } else {
+                if (room.host === socketId) {
+                    room.host = room.players[0].id;
+                }
+
+                if (room.selectedGame === "bugFixerGame") {
+                    if (room.bugFixer) {
+                        clearAllBugFixerTimers(room.bugFixer);
+                        ensureBugFixerPlayerState(room);
+                    }
+
+                    if (room.players.length < BUG_FIXER_MIN_PLAYERS) {
+                        room.bugFixer = room.bugFixer || {
+                            scores: {},
+                            hands: {},
+                            roundNumber: 0,
+                        };
+                        room.bugFixer.active = false;
+                        room.bugFixer.currentRound = null;
+                        room.bugFixer.lastResult = {
+                            message: `Need at least ${BUG_FIXER_MIN_PLAYERS} players to continue.`,
+                        };
+                        emitBugFixerState(code);
+                    } else if (room.bugFixer && room.bugFixer.active) {
+                        startNextBugFixerRound(code);
+                    } else {
+                        emitBugFixerState(code);
+                    }
+                } else if (room.selectedGame === "programmerProphunt") {
+                    if (room.prophunt) {
+                        clearProphuntTimers(room.prophunt);
+                    }
+
+                    if (room.players.length < PROPHUNT_MIN_PLAYERS || room.players.length % 2 !== 0) {
+                        room.prophunt = room.prophunt || {
+                            scores: { A: 0, B: 0 },
+                            timerHandles: { phaseTimeout: null }
+                        };
+                        room.prophunt.active = false;
+                        room.prophunt.message = `Need at least ${PROPHUNT_MIN_PLAYERS} players and an even player count to continue.`;
+                        room.prophunt.lastResultMessage = room.prophunt.message;
+                        emitProphuntState(code);
+                    } else if (room.prophunt && room.prophunt.active) {
+                        room.prophunt.teams = {
+                            A: room.prophunt.teams.A.filter(id => room.players.some(player => player.id === id)),
+                            B: room.prophunt.teams.B.filter(id => room.players.some(player => player.id === id))
+                        };
+                        emitProphuntState(code);
+                    } else {
+                        emitProphuntState(code);
+                    }
+                }
+
+                emitRoomUpdate(code);
+            }
+        }
+    }
+}
+
+function runRoomJanitor() {
+    const now = Date.now();
+
+    for (const roomCode of Object.keys(rooms)) {
+        const room = rooms[roomCode];
+        if (!room) {
+            continue;
+        }
+
+        if (!room.lastActivityAt) {
+            room.lastActivityAt = now;
+        }
+
+        pruneRoomTransientData(roomCode);
+
+        if (!Array.isArray(room.players) || room.players.length === 0) {
+            clearRoomTimers(room);
+            appendCleanupArchive({ roomCode, action: "janitor-removed-empty-room" });
+            delete rooms[roomCode];
+            continue;
+        }
+
+        if (isRoomGameActive(room)) {
+            continue;
+        }
+
+        const idleMs = now - room.lastActivityAt;
+        if (idleMs >= ROOM_IDLE_TTL_MS) {
+            clearRoomTimers(room);
+            appendCleanupArchive({ roomCode, action: "janitor-removed-idle-room", idleMs });
+            delete rooms[roomCode];
+        }
+    }
+}
+
+setInterval(runRoomJanitor, ROOM_JANITOR_INTERVAL_MS);
 
 function shuffle(array) {
     const copy = [...array];
@@ -1066,7 +1271,10 @@ function createRoom({ hostId, hostName, visibility = "private", selectedGame = n
         selectedGame,
         visibility,
         bugFixer: null,
-        prophunt: null
+        prophunt: null,
+        createdAt: Date.now(),
+        lastActivityAt: Date.now(),
+        lastActivityReason: "room-created"
     };
     return roomCode;
 }
@@ -1110,6 +1318,8 @@ function emitRoomUpdate(roomCode) {
         return;
     }
 
+    touchRoom(room, "emit-room-update");
+
     io.to(roomCode).emit("update-players", {
         players: room.players,
         hostId: room.host,
@@ -1139,6 +1349,7 @@ io.on("connection", (socket) => {
         });
 
         socket.join(roomCode);
+        touchRoomByCode(roomCode, "host-room");
         socket.emit("room-created", { roomCode, visibility, isHost: true });
         emitRoomUpdate(roomCode);
     });
@@ -1200,6 +1411,7 @@ io.on("connection", (socket) => {
         }
 
         socket.join(targetRoomCode);
+        touchRoomByCode(targetRoomCode, created ? "random-room-created" : "random-room-joined");
 
         socket.emit("room-created", {
             roomCode: targetRoomCode,
@@ -1253,6 +1465,7 @@ io.on("connection", (socket) => {
 
         room.players.push({ id: socket.id, name: String(name).trim() });
         socket.join(roomCode);
+        touchRoom(room, "join-room");
         socket.emit("room-joined", { roomCode, hostId: room.host });
 
         emitRoomUpdate(roomCode);
@@ -1279,6 +1492,7 @@ io.on("connection", (socket) => {
         }
 
         room.selectedGame = gameMode;
+        touchRoom(room, "select-gamemode");
         if (room.bugFixer) {
             clearAllBugFixerTimers(room.bugFixer);
         }
@@ -1306,7 +1520,9 @@ io.on("connection", (socket) => {
         const error = initializeProphunt(roomCode, payload || {});
         if (error) {
             socket.emit("prophunt-error", error);
+            return;
         }
+        touchRoomByCode(roomCode, "start-prophunt");
     });
 
     socket.on("prophunt-edit-line", ({ roomCode, lineRef, lineText }) => {
@@ -1360,6 +1576,7 @@ io.on("connection", (socket) => {
             isNew,
             confirmed: false
         };
+        touchRoomByCode(roomCode, "prophunt-edit-line");
         state.message = `${getPlayerName(room, socket.id)} updated their line.`;
         emitProphuntState(roomCode);
     });
@@ -1385,6 +1602,7 @@ io.on("connection", (socket) => {
         }
 
         assignment.confirmed = true;
+        touchRoomByCode(roomCode, "prophunt-confirm-hider");
         const allConfirmed = state.teams[state.hidingTeam].every(playerId => {
             const entry = state.hiderAssignments[playerId];
             return entry && entry.confirmed;
@@ -1436,6 +1654,7 @@ io.on("connection", (socket) => {
             lineRef,
             confirmed: true
         };
+        touchRoomByCode(roomCode, "prophunt-confirm-finder");
 
         const allConfirmed = state.teams[state.finderTeam].every(playerId => {
             const guess = state.finderGuesses[playerId];
@@ -1460,7 +1679,9 @@ io.on("connection", (socket) => {
         const error = initializeBugFixer(roomCode, payload || {});
         if (error) {
             socket.emit("bugfixer-error", error);
+            return;
         }
+        touchRoomByCode(roomCode, "start-bugfixer");
     });
 
     socket.on("bugfixer-submit", ({ roomCode, chosenCards }) => {
@@ -1501,6 +1722,7 @@ io.on("connection", (socket) => {
             cards: chosenCards,
             text: chosenCards.join(" | "),
         };
+        touchRoomByCode(roomCode, "bugfixer-submit");
 
         const nonDeciderCount = room.players.length - 1;
         if (Object.keys(round.submissions).length >= nonDeciderCount) {
@@ -1535,6 +1757,7 @@ io.on("connection", (socket) => {
         round.pendingWinnerPlayerId = picked.playerId;
         round.pendingWinnerSubmissionId = picked.submissionId;
         round.finalizeDeadlineAt = Date.now() + BUG_FIXER_FINALIZE_DELAY_MS;
+        touchRoomByCode(roomCode, "bugfixer-pick-winner");
 
         room.bugFixer.timerHandles.finalizeTimeout = setTimeout(() => {
             finalizeBugFixerRound(roomCode, {
@@ -1567,6 +1790,10 @@ io.on("connection", (socket) => {
         room.selectedGame = null;
         room.bugFixer = null;
         room.prophunt = null;
+        room.game = null;
+        room.gameMode = null;
+        room.gameState = "LOBBY";
+        touchRoom(room, "terminate-game");
 
         io.to(roomCode).emit("game-terminated", {
             gameMode: terminatedGame,
@@ -1733,12 +1960,14 @@ io.on("connection", (socket) => {
     socket.on("host-entering-gamehub", ({ roomCode }) => {
         const room = rooms[roomCode];
         if (!room || room.host !== socket.id) return;
+        touchRoom(room, "host-entering-gamehub");
         socket.to(roomCode).emit("host-selecting-game");
     });
 
     socket.on("host-left-gamehub", ({ roomCode }) => {
         const room = rooms[roomCode];
         if (!room || room.host !== socket.id) return;
+        touchRoom(room, "host-left-gamehub");
         socket.to(roomCode).emit("host-left-gamehub");
     });
 
@@ -1747,6 +1976,7 @@ io.on("connection", (socket) => {
         if (!room || room.host !== socket.id) return;
         const allowed = ["/codeTyper/", "/flexboxSpider/"];
         if (!allowed.includes(url)) return;
+        touchRoom(room, "launch-redirect-game");
         socket.to(roomCode).emit("redirect-to-game", { url });
     });
 
@@ -1757,6 +1987,7 @@ io.on("connection", (socket) => {
             return;
         }
 
+        touchRoom(room, "start-codetyper-multiplayer");
         io.to(roomCode).emit("launch-codetyper", { roomCode });
     });
 
@@ -1768,6 +1999,7 @@ io.on("connection", (socket) => {
             room.codeTyperMultiplayer = { players: {} };
         }
         room.codeTyperMultiplayer.players[socket.id] = { name, isFinished: false, progress: 0, wpm: 0 };
+        touchRoom(room, "codetyper-rejoin-room");
     });
 
     socket.on("codetyper-progress", ({ roomCode, progress, wpm }) => {
@@ -1777,6 +2009,7 @@ io.on("connection", (socket) => {
         }
         room.codeTyperMultiplayer.players[socket.id].progress = progress;
         room.codeTyperMultiplayer.players[socket.id].wpm = wpm;
+        touchRoom(room, "codetyper-progress");
         io.to(roomCode).emit("codetyper-progress-update", room.codeTyperMultiplayer.players);
     });
 
@@ -1787,88 +2020,26 @@ io.on("connection", (socket) => {
         }
         room.codeTyperMultiplayer.players[socket.id].isFinished = true;
         room.codeTyperMultiplayer.players[socket.id].time = time;
+        touchRoom(room, "codetyper-finished");
         io.to(roomCode).emit("codetyper-progress-update", room.codeTyperMultiplayer.players);
     });
 
     socket.on("codetyper-sync-snippet", ({ roomCode, snippet }) => {
         const room = rooms[roomCode];
         if (!room) return;
+        touchRoom(room, "codetyper-sync-snippet");
         io.to(roomCode).emit("codetyper-set-snippet", snippet);
     });
 
-    socket.on("disconnect", () => {
-        for (const code in rooms) {
-            const room = rooms[code];
-
-            if (room.codeTyperMultiplayer && room.codeTyperMultiplayer.players[socket.id]) {
-                delete room.codeTyperMultiplayer.players[socket.id];
-                io.to(code).emit("codetyper-progress-update", room.codeTyperMultiplayer.players);
-            }
-
-            const index = room.players.findIndex((p) => p.id === socket.id);
-
-            if (index !== -1) {
-                room.players.splice(index, 1);
-
-                if (room.players.length === 0) {
-                    delete rooms[code];
-                } else {
-                    if (room.host === socket.id) {
-                        room.host = room.players[0].id;
-                    }
-
-                    if (room.selectedGame === "bugFixerGame") {
-                        if (room.bugFixer) {
-                            clearAllBugFixerTimers(room.bugFixer);
-                            ensureBugFixerPlayerState(room);
-                        }
-
-                        if (room.players.length < BUG_FIXER_MIN_PLAYERS) {
-                            room.bugFixer = room.bugFixer || {
-                                scores: {},
-                                hands: {},
-                                roundNumber: 0,
-                            };
-                            room.bugFixer.active = false;
-                            room.bugFixer.currentRound = null;
-                            room.bugFixer.lastResult = {
-                                message: `Need at least ${BUG_FIXER_MIN_PLAYERS} players to continue.`,
-                            };
-                            emitBugFixerState(code);
-                        } else if (room.bugFixer && room.bugFixer.active) {
-                            startNextBugFixerRound(code);
-                        } else {
-                            emitBugFixerState(code);
-                        }
-                    } else if (room.selectedGame === "programmerProphunt") {
-                        if (room.prophunt) {
-                            clearProphuntTimers(room.prophunt);
-                        }
-
-                        if (room.players.length < PROPHUNT_MIN_PLAYERS || room.players.length % 2 !== 0) {
-                            room.prophunt = room.prophunt || {
-                                scores: { A: 0, B: 0 },
-                                timerHandles: { phaseTimeout: null }
-                            };
-                            room.prophunt.active = false;
-                            room.prophunt.message = `Need at least ${PROPHUNT_MIN_PLAYERS} players and an even player count to continue.`;
-                            room.prophunt.lastResultMessage = room.prophunt.message;
-                            emitProphuntState(code);
-                        } else if (room.prophunt && room.prophunt.active) {
-                            room.prophunt.teams = {
-                                A: room.prophunt.teams.A.filter(id => room.players.some(player => player.id === id)),
-                                B: room.prophunt.teams.B.filter(id => room.players.some(player => player.id === id))
-                            };
-                            emitProphuntState(code);
-                        } else {
-                            emitProphuntState(code);
-                        }
-                    }
-
-                    emitRoomUpdate(code);
-                }
-            }
+    socket.on("client-cleanup", ({ roomCode }) => {
+        if (roomCode && rooms[roomCode]) {
+            touchRoomByCode(roomCode, "client-cleanup");
         }
+        removeSocketFromRooms(socket.id, "client-cleanup");
+    });
+
+    socket.on("disconnect", () => {
+        removeSocketFromRooms(socket.id, "disconnect");
     });
 });
 

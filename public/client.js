@@ -13,6 +13,19 @@ let selectedGameMode = "";
 let bugFixerState = null;
 let bugFixerSelectedCards = [];
 let prophuntState = null;
+let cleanupSent = false;
+
+function emitClientCleanup() {
+    if (cleanupSent || !currentRoomCode) {
+        return;
+    }
+
+    cleanupSent = true;
+    socket.emit("client-cleanup", { roomCode: currentRoomCode });
+}
+
+window.addEventListener("beforeunload", emitClientCleanup);
+window.addEventListener("pagehide", emitClientCleanup);
 
 fetch("/gamemodes.json")
     .then((response) => response.json())
@@ -160,6 +173,7 @@ socket.on("room-created", (payload) => {
     const visibility = payload && typeof payload === "object" ? payload.visibility : "private";
 
     currentRoomCode = roomCode || "";
+    cleanupSent = false;
     currentLobbyVisibility = visibility || "private";
     isHost = payload && typeof payload === "object" ? Boolean(payload.isHost) : true;
 
@@ -177,6 +191,7 @@ socket.on("room-created", (payload) => {
 
 socket.on("room-joined", ({ roomCode: code, hostId }) => {
     currentRoomCode = code;
+    cleanupSent = false;
     isHost = false;
     // hostSection becomes visible when update-players fires
 });
@@ -247,6 +262,7 @@ socket.on("update-players", (payload) => {
 
     updateGamemodeOptions(players.length);
     renderBugFixerControls();
+    renderProphuntControls();
     renderTerminationControls();
 });
 
@@ -376,16 +392,20 @@ function launchSelectedGame() {
         startBugFixerGame();
     } else if (mode.name === "codeTyperMultiplayer") {
         startCodeTyperGame();
+    } else if (mode.name === "programmerProphunt") {
+        // Route through the dedicated start-prophunt path, settings live in the lobby area
+        document.getElementById("gameHub").classList.add("hidden");
+        document.getElementById("hostSection").classList.remove("hidden");
     } else {
         const numRounds = parseInt(document.getElementById("numRounds").value);
         const timeLimit = parseInt(document.getElementById("timeLimit").value);
         const config = { roomCode: currentRoomCode, gameMode: mode.name, numRounds, timeLimit };
         if (mode.name === "LogicCAH") {
             config.numPrompts = parseInt(document.getElementById("numPrompts").value);
-        } else {
-            config.complexity = document.getElementById("complexity").value;
         }
         socket.emit("start-game", config);
+        document.getElementById("gameHub").classList.add("hidden");
+        document.getElementById("hostSection").classList.remove("hidden");
     }
 }
 
@@ -458,20 +478,33 @@ socket.on("gamemode-selected", (gameMode) => {
 
     if (gameMode === "bugFixerGame") {
         bugFixerArea.classList.remove("hidden");
+        document.getElementById("prophuntArea").classList.add("hidden");
         if (codeTyperLobbyControls) codeTyperLobbyControls.classList.add("hidden");
+        prophuntState = null;
         renderBugFixerControls();
     } else if (gameMode === "codeTyperMultiplayer") {
         bugFixerArea.classList.add("hidden");
+        document.getElementById("prophuntArea").classList.add("hidden");
         if (codeTyperLobbyControls) codeTyperLobbyControls.classList.remove("hidden");
         const startCodeTyperButton = document.getElementById("startCodeTyperButton");
         if (startCodeTyperButton) startCodeTyperButton.classList.toggle("hidden", !isHost);
         bugFixerState = null;
         bugFixerSelectedCards = [];
-    } else {
+        prophuntState = null;
+    } else if (gameMode === "programmerProphunt") {
+        document.getElementById("prophuntArea").classList.remove("hidden");
         bugFixerArea.classList.add("hidden");
         if (codeTyperLobbyControls) codeTyperLobbyControls.classList.add("hidden");
         bugFixerState = null;
         bugFixerSelectedCards = [];
+        renderProphuntControls();
+    } else {
+        bugFixerArea.classList.add("hidden");
+        document.getElementById("prophuntArea").classList.add("hidden");
+        if (codeTyperLobbyControls) codeTyperLobbyControls.classList.add("hidden");
+        bugFixerState = null;
+        bugFixerSelectedCards = [];
+        prophuntState = null;
     }
 
     renderTerminationControls();
@@ -948,6 +981,11 @@ socket.on("launch-codetyper", ({ roomCode }) => {
     document.getElementById("codeTyperArea").classList.remove("hidden");
 });
 
+socket.on("game-started", () => {
+    document.getElementById("gameHub").classList.add("hidden");
+    document.getElementById("hostSection").classList.remove("hidden");
+});
+
 socket.on("game-terminated", (payload) => {
     selectedGameMode = "";
     bugFixerState = null;
@@ -1022,4 +1060,11 @@ document.getElementById("gameSelect").addEventListener("change", (event) => {
 socket.on("error", (msg) => {
     console.error("Socket error:", msg);
     alert("Error: " + msg);
+});
+
+socket.on("disconnect", () => {
+    bugFixerState = null;
+    bugFixerSelectedCards = [];
+    prophuntState = null;
+    selectedGameMode = "";
 });

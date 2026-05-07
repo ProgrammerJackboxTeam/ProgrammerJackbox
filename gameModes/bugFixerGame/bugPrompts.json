@@ -10,5 +10,17 @@
     {
         "responses": 2,
         "prompt": "While testing your code, you see a library is not being displayed as imported. To see if this is an issue, you _____, and if it is, you _____."
+    },
+    {
+        "responses": 1,
+        "prompt": "You have a function that is supposed to return zero, but instead is returning a very large number. To fix this, you _____."
+    },
+    {
+        "responses": 2,
+        "prompt": "You have a function that is supposed to return zero, but instead is returning a very large number. To fix this, you first _____, then _____."
+    },
+    {
+        "responses": 1,
+        "prompt": "Your function accepts and processes all input parameters correctly, but the final output is still wrong. To fix this, you _____."
     }
 ]
