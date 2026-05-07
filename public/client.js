@@ -1,4 +1,14 @@
-const socket = io();
+const socket = (() => {
+    try {
+        return window.io ? io() : null;
+    } catch (err) {
+        return null;
+    }
+})() || {
+    emit: () => {},
+    on: () => {},
+    id: "",
+};
 
 // ============================================
 // LOBBY STATE
@@ -27,6 +37,35 @@ function emitClientCleanup() {
 window.addEventListener("beforeunload", emitClientCleanup);
 window.addEventListener("pagehide", emitClientCleanup);
 
+const STORAGE_KEY_NAME = "pjboxPlayerName";
+const STORAGE_KEY_ROOMS = "pjboxRecentRooms";
+
+function savePlayerName(name) {
+    localStorage.setItem(STORAGE_KEY_NAME, name);
+}
+
+function addRecentRoom(code) {
+    const normalized = code.toUpperCase();
+    const rooms = JSON.parse(localStorage.getItem(STORAGE_KEY_ROOMS) || "[]");
+    const next = [normalized, ...rooms.filter((room) => room !== normalized)].slice(0, 5);
+    localStorage.setItem(STORAGE_KEY_ROOMS, JSON.stringify(next));
+    if (typeof renderRecentRooms === "function") {
+        renderRecentRooms();
+    }
+}
+
+function restorePersistentState() {
+    const savedName = localStorage.getItem(STORAGE_KEY_NAME);
+    if (savedName) {
+        const input = document.getElementById("nameInput");
+        if (input) input.value = savedName;
+        const hint = document.getElementById("lastNameHint");
+        if (hint) hint.textContent = `Last used: ${savedName}`;
+    }
+}
+
+restorePersistentState();
+
 fetch("/gamemodes.json")
     .then((response) => response.json())
     .then((data) => {
@@ -48,6 +87,9 @@ function submitName() {
         return;
     }
     playerName = name;
+    savePlayerName(name);
+    const hint = document.getElementById("lastNameHint");
+    if (hint) hint.textContent = `Last used: ${name}`;
     document.getElementById("nameEntry").classList.add("hidden");
     document.getElementById("menu").classList.remove("hidden");
 }
@@ -125,6 +167,7 @@ function joinLobby() {
         return;
     }
     socket.emit("join-room", { roomCode: code, name: playerName });
+    addRecentRoom(code);
 }
 
 function back() {
@@ -396,12 +439,32 @@ function launchSelectedGame() {
         // Route through the dedicated start-prophunt path, settings live in the lobby area
         document.getElementById("gameHub").classList.add("hidden");
         document.getElementById("hostSection").classList.remove("hidden");
+    } else if (mode.name === "LogicCAH") {
+        const numRounds = parseInt(document.getElementById("numRounds").value);
+        const timeLimit = parseInt(document.getElementById("timeLimit").value);
+        const numPrompts = parseInt(document.getElementById("numPrompts").value);
+
+        const url =
+            `/logicCAH/index.html?roomCode=${encodeURIComponent(currentRoomCode)}` +
+            `&name=${encodeURIComponent(playerName)}` +
+            `&isHost=${isHost}` +
+            `&numRounds=${numRounds}` +
+            `&timeLimit=${timeLimit}` +
+            `&numPrompts=${numPrompts}`;
+
+        socket.emit("launch-redirect-game", { roomCode: currentRoomCode, url });
+        window.location.href = url;
     } else {
         const numRounds = parseInt(document.getElementById("numRounds").value);
         const timeLimit = parseInt(document.getElementById("timeLimit").value);
         const config = { roomCode: currentRoomCode, gameMode: mode.name, numRounds, timeLimit };
         if (mode.name === "LogicCAH") {
             config.numPrompts = parseInt(document.getElementById("numPrompts").value);
+        } else {
+            const complexityInput = document.getElementById("complexity");
+            if (complexityInput) {
+                config.complexity = complexityInput.value;
+            }
         }
         socket.emit("start-game", config);
         document.getElementById("gameHub").classList.add("hidden");
@@ -426,6 +489,25 @@ socket.on("host-left-gamehub", () => {
 });
 
 socket.on("redirect-to-game", ({ url }) => {
+    if (url.startsWith("/logicCAH/")) {
+        const incoming = new URL(url, window.location.origin);
+
+        const numRounds = incoming.searchParams.get("numRounds") || "2";
+        const timeLimit = incoming.searchParams.get("timeLimit") || "30";
+        const numPrompts = incoming.searchParams.get("numPrompts") || "2";
+
+        const fixedUrl =
+            `/logicCAH/index.html?roomCode=${encodeURIComponent(currentRoomCode)}` +
+            `&name=${encodeURIComponent(playerName)}` +
+            `&isHost=${isHost}` +
+            `&numRounds=${encodeURIComponent(numRounds)}` +
+            `&timeLimit=${encodeURIComponent(timeLimit)}` +
+            `&numPrompts=${encodeURIComponent(numPrompts)}`;
+
+        window.location.href = fixedUrl;
+        return;
+    }
+
     window.location.href = url;
 });
 

@@ -1,31 +1,45 @@
-const socket = io();
+const socket = typeof io !== 'undefined' ? io() : { emit: () => {}, on: () => {}, id: "test" };
 
-const urlParams = new URLSearchParams(window.location.search);
+let urlParams;
+if (typeof window !== 'undefined') {
+    urlParams = new URLSearchParams(window.location.search);
+} else {
+    urlParams = new URLSearchParams("?roomCode=test&name=p1&isHost=true");
+}
 const roomCode = urlParams.get("roomCode");
 const playerName = urlParams.get("name");
 const isHost = urlParams.get("isHost") === "true";
 
-if (!roomCode || !playerName) {
-    window.location.href = "/";
+if (typeof window !== 'undefined') {
+    if (!roomCode || !playerName) {
+        window.location.href = "/";
+    }
 }
 
-document.getElementById("room-info").innerText = `Room: ${roomCode} | Player: ${playerName}`;
+if (typeof document !== 'undefined') {
+    const rmInfo = document.getElementById("room-info");
+    if (rmInfo) rmInfo.innerText = `Room: ${roomCode} | Player: ${playerName}`;
 
-if (isHost) {
-    document.getElementById("btn-start").classList.remove("hidden");
-    document.getElementById("btn-next").classList.remove("hidden");
+    if (isHost) {
+        const bs = document.getElementById("btn-start");
+        const bn = document.getElementById("btn-next");
+        if (bs) bs.classList.remove("hidden");
+        if (bn) bn.classList.remove("hidden");
+    }
 }
 
 let snippets = [];
 let currentSnippet = null;
 let opponents = {};
 
-fetch("/codeTyperMultiplayer/snippets.json")
-    .then((res) => res.json())
-    .then((data) => {
-        snippets = data;
-        socket.emit("codetyper-rejoin-room", { roomCode, name: playerName });
-    });
+if (typeof fetch !== "undefined") {
+    fetch("/codeTyperMultiplayer/snippets.json")
+        .then((res) => res.json())
+        .then((data) => {
+            snippets = data;
+            socket.emit("codetyper-rejoin-room", { roomCode, name: playerName });
+        });
+}
 
 socket.on("codetyper-set-snippet", (snippet) => {
     currentSnippet = snippet;
@@ -63,9 +77,12 @@ let timerInterval = null;
 let started = false;
 let typed = "";
 let gameActive = false;
-let totalErrors = 0;
 
-const displayEl = document.getElementById("code-display");
+let displayEl = null;
+
+if (typeof document !== 'undefined') {
+    displayEl = document.getElementById("code-display");
+}
 
 function resetMatch() {
     clearInterval(timerInterval);
@@ -74,7 +91,10 @@ function resetMatch() {
     started = false;
     typed = "";
     gameActive = true;
-    totalErrors = 0;
+
+    // Clean up stale error message from previous round
+    const staleErr = document.getElementById("err-label-msg");
+    if (staleErr) staleErr.remove();
 
     renderCode();
     updateNextKey();
@@ -149,12 +169,10 @@ document.addEventListener("keydown", (e) => {
             typed += " ".repeat(count);
         }
     } else if (e.key === "Enter") {
-        typed += "\n";
+        if (typed.length < code.length) typed += "\n";
     } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-        typed += e.key;
-        if (typed.length <= code.length && typed[typed.length - 1] !== code[typed.length - 1]) {
-            totalErrors++;
-        }
+        if (typed.length < code.length) typed += e.key;
+        // no-op: error tracking handled per-frame
     } else {
         return;
     }
@@ -281,3 +299,16 @@ window.addEventListener("keyup", (e) => {
     const val = e.key === " " ? " " : e.key.length === 1 ? e.key.toLowerCase() : e.key;
     document.querySelectorAll(`.key[data-key="${CSS.escape(val)}"]`).forEach((k) => k.classList.remove("pressed"));
 });
+
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+        charToKey,
+        updateNextKey,
+        resetMatch,
+        refreshStats,
+        finishGame,
+        setSnippets: (s) => snippets = s,
+        getCurrentSnippet: () => currentSnippet,
+        setCurrentSnippet: (s) => currentSnippet = s
+    };
+}
