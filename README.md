@@ -64,20 +64,29 @@ PORT=8080 npm start
 
 ## Architecture Overview
 
-TODO
+This is a basic Node.js and Express app. It uses Socket.IO to handle the multiplayer lobbies and keep players in sync. Multiplayer games run their main logic on the server and talk to the browsers, while single-player games just load as normal web pages.
 
 ## Project Structure
 
-TODO
+- `server.js`: Handles the server, socket connections, and rooms.
+- `public/`: The main lobby files (HTML, CSS, and some JS to connect).
+- `gameModes/`: Folders for each game. These usually have their own HTML, CSS, and JS files, plus any server code they need.
 
-## Known Issues and Limitations
+## Known Issues
 
-TODO
+- `optimizerGame` is on the list but isn't built yet.
+- You can't switch lobbies from private to public, which means "Quick Play" is broken.
+- The chat doesn't work (players can't see messages from each other).
+- The Profile and Settings pages are just placeholders for now.
+- The styling is a bit all over the place between the main site and the different games.
+- Nothing saves if the server restarts because there's no database.
+- There are some old, unused Python scripts lying around, and `bugFixerGame` has too much of its code crammed into `server.js`.
 
 ## Future Work
 
-TODO
-
-## Additional Documentation
-
-TODO
+- Fix the public lobbies and get the chat working.
+- Move the `bugFixerGame` code out of `server.js` so it matches how the other games are set up.
+- Delete the old Python files.
+- Clean up the CSS so everything looks like it belongs to the same game.
+- Finish building `programmerProphunt` and implement `optimizerGame`.
+- Add a simple database to save profiles and scores.
