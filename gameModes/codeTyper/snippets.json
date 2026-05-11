@@ -1,158 +1,158 @@
 [
     {
         "language": "JavaScript",
-        "code": "function add(a, b) {\n  return a + b;\n}\n\nconst nums = [1, 2, 3, 4, 5];\nconst total = nums.reduce(add, 0);\nconsole.log(\"Total:\", total);"
+        "code": "const add = (a, b) => a + b;\nconsole.log(add(5, 7));"
     },
     {
         "language": "Python",
-        "code": "def is_prime(n):\n    if n < 2:\n        return False\n    for i in range(2, n):\n        if n % i == 0:\n            return False\n    return True\n\nprimes = [x for x in range(20) if is_prime(x)]\nprint(primes)"
+        "code": "def is_even(n):\n    return n % 2 == 0"
     },
     {
         "language": "Java",
-        "code": "public class Counter {\n    public static void main(String[] args) {\n        int[] nums = {1, 2, 3, 4, 5};\n        int total = 0;\n        for (int n : nums) {\n            total += n;\n        }\n        System.out.println(total);\n    }\n}"
+        "code": "public static void main(String[] args) {\n    System.out.println('Hello');\n}"
     },
     {
         "language": "C",
-        "code": "#include <stdio.h>\n\nint factorial(int n) {\n    if (n <= 1) return 1;\n    return n * factorial(n - 1);\n}\n\nint main() {\n    printf(\"%d\\n\", factorial(5));\n    return 0;\n}"
+        "code": "int sum(int a, int b) {\n    return a + b;\n}"
     },
     {
         "language": "Ruby",
-        "code": "def greet(name)\n  \"Hello, #{name}!\"\nend\n\nnames = [\"Alice\", \"Bob\", \"Carol\"]\nnames.each do |name|\n  puts greet(name)\nend"
+        "code": "names.each do |name|\n  puts 'Hello, #{name}!'\nend"
     },
     {
         "language": "TypeScript",
-        "code": "interface User {\n  id: number;\n  name: string;\n  email: string;\n}\n\nfunction getUser(id: number): User {\n  return { id, name: \"Alice\", email: \"alice@example.com\" };\n}\n\nconst user = getUser(1);\nconsole.log(user.name);"
+        "code": "interface User { id: number; name: string; }\nconst u: User = { id: 1, name: 'Alice' };"
     },
     {
         "language": "Go",
-        "code": "package main\n\nimport \"fmt\"\n\nfunc fibonacci(n int) int {\n\tif n <= 1 {\n\t\treturn n\n\t}\n\treturn fibonacci(n-1) + fibonacci(n-2)\n}\n\nfunc main() {\n\tfor i := 0; i < 8; i++ {\n\t\tfmt.Println(fibonacci(i))\n\t}\n}"
+        "code": "func add(x int, y int) int {\n\treturn x + y\n}"
     },
     {
         "language": "Rust",
-        "code": "fn is_even(n: u32) -> bool {\n    n % 2 == 0\n}\n\nfn main() {\n    let numbers = vec![1, 2, 3, 4, 5, 6];\n    let evens: Vec<u32> = numbers.into_iter().filter(|&x| is_even(x)).collect();\n    println!(\"{:?}\", evens);\n}"
+        "code": "fn is_even(n: u32) -> bool {\n    n % 2 == 0\n}"
     },
     {
         "language": "C++",
-        "code": "#include <iostream>\n#include <vector>\n#include <algorithm>\n\nint main() {\n    std::vector<int> nums = {5, 3, 1, 4, 2};\n    std::sort(nums.begin(), nums.end());\n    for (int n : nums) {\n        std::cout << n << \" \";\n    }\n    return 0;\n}"
+        "code": "std::vector<int> nums = {1, 2, 3};\nnums.push_back(4);"
     },
     {
         "language": "PHP",
-        "code": "<?php\nfunction reverseString($str) {\n    return strrev($str);\n}\n\n$words = [\"hello\", \"world\", \"php\"];\nforeach ($words as $word) {\n    echo reverseString($word) . \"\\n\";\n}\n?>"
+        "code": "<?php\necho reverseString('hello');\n?>"
     },
     {
         "language": "Swift",
-        "code": "func fizzbuzz(_ n: Int) -> String {\n    if n % 15 == 0 { return \"FizzBuzz\" }\n    if n % 3 == 0 { return \"Fizz\" }\n    if n % 5 == 0 { return \"Buzz\" }\n    return String(n)\n}\n\nfor i in 1...15 {\n    print(fizzbuzz(i))\n}"
+        "code": "func add(_ a: Int, _ b: Int) -> Int {\n    return a + b\n}"
     },
     {
         "language": "Kotlin",
-        "code": "data class Point(val x: Int, val y: Int)\n\nfun distance(a: Point, b: Point): Double {\n    val dx = (a.x - b.x).toDouble()\n    val dy = (a.y - b.y).toDouble()\n    return Math.sqrt(dx * dx + dy * dy)\n}\n\nfun main() {\n    val p1 = Point(0, 0)\n    val p2 = Point(3, 4)\n    println(distance(p1, p2))\n}"
+        "code": "fun add(a: Int, b: Int): Int {\n    return a + b\n}"
     },
     {
         "language": "Bash",
-        "code": "#!/bin/bash\n\nfor file in *.txt; do\n    if [ -f \"$file\" ]; then\n        lines=$(wc -l < \"$file\")\n        echo \"$file has $lines lines\"\n    fi\ndone"
+        "code": "for file in *.txt; do\n    echo 'Found '\ndone"
     },
     {
         "language": "C#",
-        "code": "using System;\nusing System.Linq;\n\nclass Program {\n    static void Main() {\n        int[] numbers = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };\n        var evens = numbers.Where(n => n % 2 == 0).ToArray();\n        Console.WriteLine(string.Join(\", \", evens));\n    }\n}"
+        "code": "var evens = numbers.Where(n => n % 2 == 0);\nConsole.WriteLine(evens.Count());"
     },
     {
         "language": "JavaScript",
-        "code": "function debounce(fn, delay) {\n  let timer;\n  return function(...args) {\n    clearTimeout(timer);\n    timer = setTimeout(() => fn.apply(this, args), delay);\n  };\n}\n\nconst log = debounce((msg) => console.log(msg), 300);\nlog(\"hello\");"
+        "code": "setTimeout(() => {\n  console.log('Done');\n}, 1000);"
     },
     {
         "language": "Python",
-        "code": "from collections import defaultdict\n\ndef group_by_length(words):\n    groups = defaultdict(list)\n    for word in words:\n        groups[len(word)].append(word)\n    return dict(groups)\n\nwords = [\"cat\", \"dog\", \"elephant\", \"ant\", \"bear\"]\nprint(group_by_length(words))"
+        "code": "words = ['cat', 'dog', 'ant']\nprint([len(w) for w in words])"
     },
     {
         "language": "Java",
-        "code": "import java.util.Arrays;\nimport java.util.List;\nimport java.util.stream.Collectors;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<String> names = Arrays.asList(\"alice\", \"bob\", \"charlie\");\n        List<String> upper = names.stream()\n            .map(String::toUpperCase)\n            .collect(Collectors.toList());\n        System.out.println(upper);\n    }\n}"
+        "code": "List<String> upper = names.stream()\n    .map(String::toUpperCase)\n    .collect(Collectors.toList());"
     },
     {
         "language": "C",
-        "code": "#include <stdio.h>\n#include <string.h>\n\nvoid reverse(char *str) {\n    int n = strlen(str);\n    for (int i = 0; i < n / 2; i++) {\n        char tmp = str[i];\n        str[i] = str[n - 1 - i];\n        str[n - 1 - i] = tmp;\n    }\n}\n\nint main() {\n    char s[] = \"hello\";\n    reverse(s);\n    printf(\"%s\\n\", s);\n    return 0;\n}"
+        "code": "char s[] = 'hello';\nprintf('%s\\n', s);"
     },
     {
         "language": "Go",
-        "code": "package main\n\nimport (\n\t\"fmt\"\n\t\"strings\"\n)\n\nfunc wordCount(s string) map[string]int {\n\tcounts := make(map[string]int)\n\tfor _, word := range strings.Fields(s) {\n\t\tcounts[word]++\n\t}\n\treturn counts\n}\n\nfunc main() {\n\tfmt.Println(wordCount(\"the cat sat on the mat\"))\n}"
+        "code": "func main() {\n\tfmt.Println('Hello, Go!')\n}"
     },
     {
         "language": "Rust",
-        "code": "fn bubble_sort(arr: &mut Vec<i32>) {\n    let n = arr.len();\n    for i in 0..n {\n        for j in 0..n - 1 - i {\n            if arr[j] > arr[j + 1] {\n                arr.swap(j, j + 1);\n            }\n        }\n    }\n}\n\nfn main() {\n    let mut v = vec![5, 2, 8, 1, 9];\n    bubble_sort(&mut v);\n    println!(\"{:?}\", v);\n}"
+        "code": "let mut v = vec![5, 2, 8, 1, 9];\nv.sort();"
     },
     {
         "language": "TypeScript",
-        "code": "type Stack<T> = {\n  items: T[];\n  push: (item: T) => void;\n  pop: () => T | undefined;\n};\n\nfunction createStack<T>(): Stack<T> {\n  const items: T[] = [];\n  return {\n    items,\n    push: (item) => items.push(item),\n    pop: () => items.pop(),\n  };\n}\n\nconst stack = createStack<number>();\nstack.push(1);\nstack.push(2);\nconsole.log(stack.pop());"
+        "code": "const stack: number[] = [];\nstack.push(1);\nstack.pop();"
     },
     {
         "language": "Swift",
-        "code": "struct Queue<T> {\n    private var items: [T] = []\n\n    mutating func enqueue(_ item: T) {\n        items.append(item)\n    }\n\n    mutating func dequeue() -> T? {\n        return items.isEmpty ? nil : items.removeFirst()\n    }\n}\n\nvar q = Queue<Int>()\nq.enqueue(1)\nq.enqueue(2)\nprint(q.dequeue()!)"
+        "code": "var items: [Int] = []\nitems.append(1)"
     },
     {
         "language": "Kotlin",
-        "code": "fun main() {\n    val scores = mapOf(\"Alice\" to 95, \"Bob\" to 82, \"Carol\" to 88)\n    val topScorer = scores.maxByOrNull { it.value }\n    println(\"Top scorer: ${topScorer?.key} with ${topScorer?.value}\")\n}"
+        "code": "val scores = mapOf('Alice' to 95)\nprintln(scores['Alice'])"
     },
     {
         "language": "Ruby",
-        "code": "class Stack\n  def initialize\n    @data = []\n  end\n\n  def push(item)\n    @data.push(item)\n  end\n\n  def pop\n    @data.pop\n  end\n\n  def empty?\n    @data.empty?\n  end\nend\n\ns = Stack.new\ns.push(10)\ns.push(20)\nputs s.pop"
+        "code": "data = []\ndata.push(10)\nputs data.pop"
     },
     {
         "language": "PHP",
-        "code": "<?php\nfunction flatten(array $arr): array {\n    $result = [];\n    array_walk_recursive($arr, function($val) use (&$result) {\n        $result[] = $val;\n    });\n    return $result;\n}\n\n$nested = [1, [2, 3], [4, [5, 6]]];\nprint_r(flatten($nested));\n?>"
+        "code": "<?php\n = [1, [2, 3]];\n?>"
     },
     {
         "language": "C++",
-        "code": "#include <iostream>\n#include <stack>\n#include <string>\n\nbool isBalanced(const std::string& s) {\n    std::stack<char> st;\n    for (char c : s) {\n        if (c == '(' || c == '[') st.push(c);\n        else if (c == ')' && (st.empty() || st.top() != '(')) return false;\n        else if (c == ']' && (st.empty() || st.top() != '[')) return false;\n        else st.pop();\n    }\n    return st.empty();\n}\n\nint main() {\n    std::cout << isBalanced(\"([])([)]\") << std::endl;\n    return 0;\n}"
+        "code": "std::stack<char> st;\nst.push('(');\nst.pop();"
     },
     {
         "language": "Bash",
-        "code": "#!/bin/bash\n\nbackup_dir=\"./backups\"\nmkdir -p \"$backup_dir\"\n\nfor file in *.log; do\n    if [ -f \"$file\" ]; then\n        cp \"$file\" \"$backup_dir/${file%.log}_$(date +%Y%m%d).log\"\n        echo \"Backed up $file\"\n    fi\ndone"
+        "code": "mkdir -p './backups'\ncp *.log './backups/'"
     },
     {
         "language": "C#",
-        "code": "using System;\nusing System.Collections.Generic;\n\nclass Program {\n    static IEnumerable<int> Range(int start, int end) {\n        for (int i = start; i <= end; i++)\n            yield return i;\n    }\n\n    static void Main() {\n        foreach (var n in Range(1, 5))\n            Console.WriteLine(n * n);\n    }\n}"
+        "code": "foreach (var n in Range(1, 5))\n    Console.WriteLine(n * n);"
     },
     {
         "language": "Lua",
-        "code": "function map(tbl, fn)\n  local result = {}\n  for i, v in ipairs(tbl) do\n    result[i] = fn(v)\n  end\n  return result\nend\n\nlocal nums = {1, 2, 3, 4, 5}\nlocal squares = map(nums, function(x) return x * x end)\nfor _, v in ipairs(squares) do\n  print(v)\nend"
+        "code": "local nums = {1, 2, 3}\nprint(nums[1])"
     },
     {
         "language": "Scala",
-        "code": "object Main extends App {\n  def quicksort(lst: List[Int]): List[Int] = lst match {\n    case Nil => Nil\n    case head :: tail =>\n      val smaller = tail.filter(_ <= head)\n      val bigger  = tail.filter(_ > head)\n      quicksort(smaller) ::: head :: quicksort(bigger)\n  }\n\n  println(quicksort(List(3, 1, 4, 1, 5, 9, 2, 6)))\n}"
+        "code": "val numbers = List(1, 2, 3)\nprintln(numbers.map(_ * 2))"
     },
     {
         "language": "Haskell",
-        "code": "module Main where\n\nfib :: Int -> Int\nfib 0 = 0\nfib 1 = 1\nfib n = fib (n - 1) + fib (n - 2)\n\nmain :: IO ()\nmain = mapM_ print [fib n | n <- [0..9]]"
+        "code": "fib 0 = 0\nfib 1 = 1\nfib n = fib (n - 1) + fib (n - 2)"
     },
     {
         "language": "R",
-        "code": "# Compute summary stats for a numeric vector\ndata <- c(4, 7, 2, 9, 1, 5, 8, 3, 6)\n\ncat(\"Mean:\", mean(data), \"\\n\")\ncat(\"Median:\", median(data), \"\\n\")\ncat(\"SD:\", sd(data), \"\\n\")\ncat(\"Sorted:\", paste(sort(data), collapse = \", \"), \"\\n\")"
+        "code": "data <- c(4, 7, 2, 9, 1)\ncat('Mean:', mean(data), '\\n')"
     },
     {
         "language": "Python",
-        "code": "class Node:\n    def __init__(self, val):\n        self.val = val\n        self.next = None\n\nclass LinkedList:\n    def __init__(self):\n        self.head = None\n\n    def append(self, val):\n        node = Node(val)\n        if not self.head:\n            self.head = node\n            return\n        cur = self.head\n        while cur.next:\n            cur = cur.next\n        cur.next = node\n\n    def to_list(self):\n        result, cur = [], self.head\n        while cur:\n            result.append(cur.val)\n            cur = cur.next\n        return result\n\nll = LinkedList()\nfor v in [1, 2, 3]:\n    ll.append(v)\nprint(ll.to_list())"
+        "code": "class Node:\n    def __init__(self, val):\n        self.val = val"
     },
     {
         "language": "JavaScript",
-        "code": "async function fetchData(url) {\n  try {\n    const res = await fetch(url);\n    if (!res.ok) throw new Error(`HTTP error: ${res.status}`);\n    const data = await res.json();\n    return data;\n  } catch (err) {\n    console.error(\"Fetch failed:\", err.message);\n  }\n}"
+        "code": "const res = await fetch(url);\nconst data = await res.json();"
     },
     {
         "language": "Go",
-        "code": "package main\n\nimport (\n\t\"fmt\"\n\t\"sync\"\n)\n\nfunc main() {\n\tvar wg sync.WaitGroup\n\tfor i := 0; i < 5; i++ {\n\t\twg.Add(1)\n\t\tgo func(n int) {\n\t\t\tdefer wg.Done()\n\t\t\tfmt.Printf(\"goroutine %d\\n\", n)\n\t\t}(i)\n\t}\n\twg.Wait()\n}"
+        "code": "var wg sync.WaitGroup\nwg.Add(1)\nwg.Done()"
     },
     {
         "language": "Rust",
-        "code": "use std::collections::HashMap;\n\nfn main() {\n    let text = \"hello world hello rust world hello\";\n    let mut counts: HashMap<&str, u32> = HashMap::new();\n    for word in text.split_whitespace() {\n        *counts.entry(word).or_insert(0) += 1;\n    }\n    for (word, count) in &counts {\n        println!(\"{}: {}\", word, count);\n    }\n}"
+        "code": "use std::collections::HashMap;\nlet mut counts = HashMap::new();"
     },
     {
         "language": "C++",
-        "code": "#include <iostream>\n#include <functional>\n\ntemplate<typename T>\nT apply(T val, std::function<T(T)> fn) {\n    return fn(val);\n}\n\nint main() {\n    auto square = [](int x) { return x * x; };\n    std::cout << apply(5, std::function<int(int)>(square)) << std::endl;\n    return 0;\n}"
+        "code": "auto square = [](int x) { return x * x; };\nstd::cout << square(5);"
     },
     {
         "language": "TypeScript",
-        "code": "async function retry<T>(fn: () => Promise<T>, attempts: number): Promise<T> {\n  for (let i = 0; i < attempts; i++) {\n    try {\n      return await fn();\n    } catch (e) {\n      if (i === attempts - 1) throw e;\n    }\n  }\n  throw new Error(\"unreachable\");\n}"
+        "code": "async function retry(fn) {\n  return await fn();\n}"
     },
     {
         "language": "Kotlin",
-        "code": "sealed class Result<out T>\ndata class Success<T>(val value: T) : Result<T>()\ndata class Failure(val error: String) : Result<Nothing>()\n\nfun divide(a: Int, b: Int): Result<Int> =\n    if (b == 0) Failure(\"Division by zero\")\n    else Success(a / b)\n\nfun main() {\n    when (val r = divide(10, 2)) {\n        is Success -> println(\"Result: ${r.value}\")\n        is Failure -> println(\"Error: ${r.error}\")\n    }\n}"
+        "code": "data class Success<T>(val value: T)\nval s = Success('Done')"
     }
 ]
