@@ -278,6 +278,46 @@ class ProgrammerProphunt {
     }
 
     /**
+     * Remove a player from the game
+     */
+    removePlayer(playerId) {
+        const playerIndex = this.players.findIndex(p => p.id === playerId);
+        if (playerIndex === -1) {
+            return false; // Player not found
+        }
+
+        // Remove player from players array
+        this.players.splice(playerIndex, 1);
+
+        // Remove from teams
+        this.team1 = this.team1.filter(p => p.id !== playerId);
+        this.team2 = this.team2.filter(p => p.id !== playerId);
+
+        // Remove from scores
+        delete this.scores[playerId];
+
+        // Remove from hiderLines if they were a hider
+        delete this.hiderLines[playerId];
+
+        // Remove from finderSelections if they were a finder
+        delete this.finderSelections[playerId];
+
+        // If teams become unbalanced, we might need to rebalance
+        // For now, just ensure teams are as balanced as possible
+        if (this.team1.length > this.team2.length + 1) {
+            // Move one from team1 to team2
+            const movedPlayer = this.team1.pop();
+            if (movedPlayer) this.team2.push(movedPlayer);
+        } else if (this.team2.length > this.team1.length + 1) {
+            // Move one from team2 to team1
+            const movedPlayer = this.team2.pop();
+            if (movedPlayer) this.team1.push(movedPlayer);
+        }
+
+        return true;
+    }
+
+    /**
      * Get current game status
      */
     getGameStatus() {

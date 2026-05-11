@@ -300,6 +300,10 @@ window.addEventListener("keyup", (e) => {
     document.querySelectorAll(`.key[data-key="${CSS.escape(val)}"]`).forEach((k) => k.classList.remove("pressed"));
 });
 
+function leaveGame() {
+    socket.emit("leave-game", { roomCode });
+}
+
 if (typeof module !== "undefined" && module.exports) {
     module.exports = {
         charToKey,

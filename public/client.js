@@ -1088,6 +1088,11 @@ socket.on("game-terminated", (payload) => {
     }
 });
 
+socket.on("left-game", () => {
+    // Player has left the game, redirect back to lobby
+    window.location.href = "/";
+});
+
 // ============================================
 // GAME MODE OPTIONS (inline dropdown)
 // ============================================

@@ -1818,6 +1818,36 @@ io.on("connection", (socket) => {
         });
     });
 
+    socket.on("leave-game", ({ roomCode }) => {
+        const room = rooms[roomCode];
+        if (!room || !room.game || !room.gameMode) {
+            return;
+        }
+
+        // Remove player from the game instance
+        if (room.game && typeof room.game.removePlayer === 'function') {
+            room.game.removePlayer(socket.id);
+        }
+
+        // Emit game state update to remaining players
+        if (room.gameMode === "LogicCAH") {
+            io.to(roomCode).emit("game-started", {
+                gameMode: "LogicCAH",
+                gameState: room.gameState,
+                status: room.game.getGameStatus(),
+            });
+        } else if (room.gameMode === "ProgrammerProphunt") {
+            io.to(roomCode).emit("game-started", {
+                gameMode: "ProgrammerProphunt",
+                gameState: room.gameState,
+                status: room.game.getGameStatus(),
+            });
+        }
+
+        // Notify the leaving player that they've left the game
+        socket.emit("left-game");
+    });
+
     socket.on("start-game", ({ roomCode, gameMode, numRounds, timeLimit, complexity, numPrompts }) => {
         const room = rooms[roomCode];
         if (!room || room.host !== socket.id) {
