@@ -21,6 +21,8 @@
         "sim:bugfixer:online": "node tools/simulateBugFixer.js",
         "sim:prophunt:online": "node tools/simulateProgrammerProphunt.js",
         "sim:all:online": "npm run sim:lobby:online && npm run sim:matchmaking:online && npm run sim:codetyper:online && npm run sim:logiccah:online && npm run sim:bugfixer:online && npm run sim:prophunt:online",
+        "test:render": "node tools/testRender.js",
+        "test:render:matrix": "node tools/testRender.js --transport-matrix",
         "lint": "eslint .",
         "format": "prettier --write ."
     },

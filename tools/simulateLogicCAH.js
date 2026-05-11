@@ -1,7 +1,5 @@
 const { io } = require("socket.io-client");
-
-const SERVER_URL = process.env.SIM_SERVER_URL || process.env.SERVER_URL || "http://localhost:3000";
-const SOCKET_PATH = process.env.SIM_SOCKET_PATH || process.env.SOCKET_PATH || "/socket.io";
+const { SERVER_URL, SOCKET_PATH, getSocketOptions } = require("./simConfig");
 
 function delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -19,13 +17,7 @@ async function waitFor(predicate, timeoutMs, timeoutMessage) {
 }
 
 function createClient(name) {
-    const socket = io(SERVER_URL, {
-        path: SOCKET_PATH,
-        transports: ["websocket", "polling"],
-        forceNew: true,
-        reconnection: false,
-        timeout: 10000,
-    });
+    const socket = io(SERVER_URL, getSocketOptions());
 
     const state = {
         name,
