@@ -643,6 +643,7 @@ function startBugFixerGame() {
         return;
     }
 
+    console.log("[client] Emitting start-bugfixer event", { roomCode: currentRoomCode, pointsToWin, submissionSeconds, deciderSeconds });
     socket.emit("start-bugfixer", {
         roomCode: currentRoomCode,
         pointsToWin,
@@ -654,6 +655,7 @@ function startBugFixerGame() {
     // Close Game Hub and show lobby with bugfixer area
     document.getElementById("gameHub").classList.add("hidden");
     document.getElementById("hostSection").classList.remove("hidden");
+    console.log("[client] UI updated to show hostSection and bugFixerArea (waiting for state)");
 }
 
 function submitBugFixerCards() {
@@ -708,12 +710,14 @@ function startProphuntGame() {
         return;
     }
 
+    console.log("[client] Emitting start-prophunt event", { roomCode: currentRoomCode, complexity, roundSeconds, rounds });
     socket.emit("start-prophunt", {
         roomCode: currentRoomCode,
         complexity,
         roundSeconds,
         rounds
     });
+    console.log("[client] Emitted start-prophunt");
 }
 
 function applyProphuntEdit() {
@@ -926,12 +930,14 @@ function renderProphuntState(state) {
 }
 
 socket.on("prophunt-state", state => {
+    console.log("[client] Received prophunt-state event", state);
     selectedGameMode = "programmerProphunt";
     document.getElementById("gameHub").classList.add("hidden");
     document.getElementById("gameHubWaiting").classList.add("hidden");
     document.getElementById("hostSection").classList.remove("hidden");
     document.getElementById("prophuntArea").classList.remove("hidden");
     document.getElementById("bugFixerArea").classList.add("hidden");
+    console.log("[client] Updated UI to show prophuntArea");
     renderProphuntState(state);
     renderTerminationControls();
 });
@@ -1056,12 +1062,14 @@ function renderBugFixerState(state) {
 }
 
 socket.on("bugfixer-state", (state) => {
+    console.log("[client] Received bugfixer-state event", state);
     selectedGameMode = "bugFixerGame";
     document.getElementById("gameHub").classList.add("hidden");
     document.getElementById("gameHubWaiting").classList.add("hidden");
     document.getElementById("hostSection").classList.remove("hidden");
     document.getElementById("bugFixerArea").classList.remove("hidden");
     document.getElementById("prophuntArea").classList.add("hidden");
+    console.log("[client] Updated UI to show bugFixerArea");
     renderBugFixerState(state);
     renderTerminationControls();
 });

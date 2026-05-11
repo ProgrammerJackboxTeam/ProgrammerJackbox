@@ -796,17 +796,25 @@ function buildBugFixerPayloadForPlayer(room, playerId) {
 function emitBugFixerState(roomCode) {
     const room = rooms[roomCode];
     if (!room || room.selectedGame !== "bugFixerGame") {
+        console.log(`[emitBugFixerState] Skipped: room exists=${!!room}, selectedGame=${room?.selectedGame}`);
         return;
     }
 
+    console.log(`[emitBugFixerState] Broadcasting to ${room.players.length} players in room ${roomCode}`);
+    
+    // Send personalized state to each player in the room
     room.players.forEach((player) => {
-        io.to(player.id).emit("bugfixer-state", buildBugFixerPayloadForPlayer(room, player.id));
+        console.log(`  → Emitting to ${player.name} (${player.id})`);
+        const payload = buildBugFixerPayloadForPlayer(room, player.id);
+        io.to(player.id).emit("bugfixer-state", payload);
     });
 }
 
 function startNextBugFixerRound(roomCode) {
+    console.log(`[startNextBugFixerRound] Starting for room ${roomCode}`);
     const room = rooms[roomCode];
     if (!room || room.selectedGame !== "bugFixerGame" || !room.bugFixer || !room.bugFixer.active) {
+        console.log(`[startNextBugFixerRound] Skipped: invalid room state`);
         return;
     }
 
@@ -814,6 +822,7 @@ function startNextBugFixerRound(roomCode) {
         room.bugFixer.active = false;
         room.bugFixer.currentRound = null;
         room.bugFixer.lastResult = { message: `Need at least ${BUG_FIXER_MIN_PLAYERS} players to continue.` };
+        console.log(`[startNextBugFixerRound] Not enough players, emitting state`);
         emitBugFixerState(roomCode);
         return;
     }
@@ -836,6 +845,7 @@ function startNextBugFixerRound(roomCode) {
         state.active = false;
         state.currentRound = null;
         state.lastResult = { message: "No prompt cards are available." };
+        console.log(`[startNextBugFixerRound] No prompt cards, emitting state`);
         emitBugFixerState(roomCode);
         return;
     }
@@ -868,6 +878,7 @@ function startNextBugFixerRound(roomCode) {
         }, submitSeconds * 1000);
     }
 
+    console.log(`[startNextBugFixerRound] Round ${state.roundNumber} started, emitting state`);
     emitBugFixerState(roomCode);
 }
 
@@ -1015,10 +1026,14 @@ function buildProphuntLineOptions(room, state, playerId) {
 function emitProphuntState(roomCode) {
     const room = rooms[roomCode];
     if (!room || room.selectedGame !== "programmerProphunt") {
+        console.log(`[emitProphuntState] Skipped: room exists=${!!room}, selectedGame=${room?.selectedGame}`);
         return;
     }
 
+    console.log(`[emitProphuntState] Broadcasting to ${room.players.length} players in room ${roomCode}`);
+
     room.players.forEach(player => {
+        console.log(`  → Emitting to ${player.name} (${player.id})`);
         io.to(player.id).emit("prophunt-state", buildProphuntPayloadForPlayer(room, player.id));
     });
 }
@@ -1543,17 +1558,22 @@ io.on("connection", (socket) => {
     });
 
     socket.on("start-prophunt", payload => {
+        console.log(`[start-prophunt] Received from ${socket.id}`);
         const roomCode = payload && payload.roomCode;
         const room = rooms[roomCode];
         if (!room || room.host !== socket.id || room.selectedGame !== "programmerProphunt") {
+            console.log(`[start-prophunt] Rejected: room=${!!room}, isHost=${room?.host === socket.id}, selectedGame=${room?.selectedGame}`);
             return;
         }
 
+        console.log(`[start-prophunt] Initializing Prophunt for room ${roomCode}`);
         const error = initializeProphunt(roomCode, payload || {});
         if (error) {
+            console.log(`[start-prophunt] Initialization error: ${error}`);
             socket.emit("prophunt-error", error);
             return;
         }
+        console.log(`[start-prophunt] Initialization successful, touching room`);
         touchRoomByCode(roomCode, "start-prophunt");
     });
 
@@ -1702,17 +1722,22 @@ io.on("connection", (socket) => {
     });
 
     socket.on("start-bugfixer", payload => {
+        console.log(`[start-bugfixer] Received from ${socket.id}`);
         const roomCode = payload && payload.roomCode;
         const room = rooms[roomCode];
         if (!room || room.host !== socket.id || room.selectedGame !== "bugFixerGame") {
+            console.log(`[start-bugfixer] Rejected: room=${!!room}, isHost=${room?.host === socket.id}, selectedGame=${room?.selectedGame}`);
             return;
         }
 
+        console.log(`[start-bugfixer] Initializing Bug Fixer for room ${roomCode}`);
         const error = initializeBugFixer(roomCode, payload || {});
         if (error) {
+            console.log(`[start-bugfixer] Initialization error: ${error}`);
             socket.emit("bugfixer-error", error);
             return;
         }
+        console.log(`[start-bugfixer] Initialization successful, touching room`);
         touchRoomByCode(roomCode, "start-bugfixer");
     });
 
