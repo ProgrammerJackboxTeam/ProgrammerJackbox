@@ -413,13 +413,6 @@ function leaveGame() {
 
 console.log("CAH client loaded");
 
-
-socket.emit("logiccah-rejoin-room", {
-    roomCode,
-    name: playerName,
-    isHost,
-});
-
 socket.on("game-started", ({ gameMode, status }) => {
     if (gameMode !== "LogicCAH") {
         return;
