@@ -45,12 +45,6 @@ startGameBtn.onclick = () => {
 
 roomInfoEl.textContent = `Room: ${roomCode} | Player: ${playerName} ${isHost ? "(Host)" : ""}`;
 
-socket.emit("logiccah-rejoin-room", {
-    roomCode,
-    name: playerName,
-    isHost
-});
-
 function clearDynamic() {
 
     dynamicContainerEl.innerHTML = "";
@@ -412,6 +406,12 @@ function leaveGame() {
 //debugging logs
 
 console.log("CAH client loaded");
+
+socket.emit("logiccah-rejoin-room", {
+    roomCode,
+    name: playerName,
+    isHost
+});
 
 socket.on("game-started", ({ gameMode, status }) => {
     if (gameMode !== "LogicCAH") {
