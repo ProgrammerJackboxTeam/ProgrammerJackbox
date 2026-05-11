@@ -107,7 +107,7 @@
           </div>
 
           <div class="join-code-grid">
-            <input id="joinDigit1" maxlength="1" inputmode="latin" autocomplete="off" oninput="advanceJoinDigit(1)" onkeydown="handleJoinDigitKeydown(event,1)" />
+            <input id="joinDigit1" maxlength="1" inputmode="latin" autocomplete="off" oninput="advanceJoinDigit(1)" onkeydown="handleJoinDigitKeydown(event,1)" onpaste="handleJoinCodePaste(event)" />
             <input id="joinDigit2" maxlength="1" inputmode="latin" autocomplete="off" oninput="advanceJoinDigit(2)" onkeydown="handleJoinDigitKeydown(event,2)" />
             <input id="joinDigit3" maxlength="1" inputmode="latin" autocomplete="off" oninput="advanceJoinDigit(3)" onkeydown="handleJoinDigitKeydown(event,3)" />
             <input id="joinDigit4" maxlength="1" inputmode="latin" autocomplete="off" oninput="advanceJoinDigit(4)" onkeydown="handleJoinDigitKeydown(event,4)" />
@@ -573,6 +573,31 @@
       if (key === "Enter") {
         joinLobby();
       }
+    }
+
+    function handleJoinCodePaste(event) {
+      event.preventDefault();
+      const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+      const cleanText = pastedText.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+
+      // Fill the input fields with the pasted characters
+      cleanText.split('').forEach((char, idx) => {
+        const input = document.getElementById(`joinDigit${idx + 1}`);
+        if (input) input.value = char;
+      });
+
+      // Clear any remaining fields if pasted text was shorter
+      for (let i = cleanText.length; i < 6; i++) {
+        const input = document.getElementById(`joinDigit${i + 1}`);
+        if (input) input.value = '';
+      }
+
+      updateJoinHiddenCode();
+
+      // Focus the next empty field or the last field if all are filled
+      const nextEmptyIndex = cleanText.length < 6 ? cleanText.length + 1 : 6;
+      const nextInput = document.getElementById(`joinDigit${nextEmptyIndex}`);
+      nextInput?.focus();
     }
 
     function updateJoinHiddenCode() {
