@@ -48,6 +48,7 @@ roomInfoEl.textContent = `Room: ${roomCode} | Player: ${playerName} ${isHost ? "
 socket.emit("logiccah-rejoin-room", {
     roomCode,
     name: playerName,
+    isHost
 });
 
 function clearDynamic() {
