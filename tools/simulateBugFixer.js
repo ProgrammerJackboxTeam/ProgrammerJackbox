@@ -1,6 +1,7 @@
 const { io } = require("socket.io-client");
 
-const SERVER_URL = "http://localhost:3000";
+const SERVER_URL = process.env.SIM_SERVER_URL || process.env.SERVER_URL || "http://localhost:3000";
+const SOCKET_PATH = process.env.SIM_SOCKET_PATH || process.env.SOCKET_PATH || "/socket.io";
 const PLAYER_NAMES = ["SimA", "SimB", "SimC", "SimD"];
 const GAME_TO_WIN = 1;
 
@@ -9,9 +10,16 @@ function delay(ms) {
 }
 
 async function main() {
+    console.log(`[simulation] target=${SERVER_URL}, path=${SOCKET_PATH}`);
     const players = PLAYER_NAMES.map((name) => ({
         name,
-        socket: io(SERVER_URL, { transports: ["websocket"], forceNew: true }),
+        socket: io(SERVER_URL, {
+            path: SOCKET_PATH,
+            transports: ["websocket", "polling"],
+            forceNew: true,
+            reconnection: false,
+            timeout: 10000,
+        }),
         roomCode: "",
         currentState: null,
         joined: false,
@@ -129,42 +137,45 @@ async function main() {
         });
     });
 
-    await delay(500);
+    try {
+        await delay(500);
 
-    const host = players[0];
-    host.socket.emit("host-room", { name: host.name, visibility: "private" });
+        const host = players[0];
+        host.socket.emit("host-room", { name: host.name, visibility: "private" });
 
-    await waitFor(() => host.roomCode, 8000, "Host room was not created");
-    const roomCode = host.roomCode;
+        await waitFor(() => host.roomCode, 8000, "Host room was not created");
+        const roomCode = host.roomCode;
 
-    for (let i = 1; i < players.length; i += 1) {
-        players[i].socket.emit("join-room", { roomCode, name: players[i].name });
+        for (let i = 1; i < players.length; i += 1) {
+            players[i].socket.emit("join-room", { roomCode, name: players[i].name });
+        }
+
+        await delay(1000);
+
+        host.socket.emit("select-gamemode", { roomCode, gameMode: "bugFixerGame" });
+        await delay(500);
+
+        host.socket.emit("start-bugfixer", {
+            roomCode,
+            pointsToWin: GAME_TO_WIN,
+            submissionSeconds: 3,
+            deciderSeconds: 3,
+            deciderTimeoutAction: "no-point",
+        });
+
+        console.log("[simulation] Game started. Waiting for completion...");
+        await waitFor(() => players.every((player) => player.gameEnded), 90000, "Timed out waiting for game to finish");
+
+        const finalState = host.currentState;
+        if (finalState && Array.isArray(finalState.scores)) {
+            const summary = finalState.scores.map((entry) => `${entry.name}:${entry.score}`).join(", ");
+            console.log(`[simulation] Final scores: ${summary}`);
+        }
+
+        console.log("[simulation] Completed successfully.");
+    } finally {
+        players.forEach((player) => player.socket.disconnect());
     }
-
-    await delay(1000);
-
-    host.socket.emit("select-gamemode", { roomCode, gameMode: "bugFixerGame" });
-    await delay(500);
-
-    host.socket.emit("start-bugfixer", {
-        roomCode,
-        pointsToWin: GAME_TO_WIN,
-        submissionSeconds: 3,
-        deciderSeconds: 3,
-        deciderTimeoutAction: "no-point",
-    });
-
-    console.log("[simulation] Game started. Waiting for completion...");
-    await waitFor(() => players.every((player) => player.gameEnded), 90000, "Timed out waiting for game to finish");
-
-    const finalState = host.currentState;
-    if (finalState && Array.isArray(finalState.scores)) {
-        const summary = finalState.scores.map((entry) => `${entry.name}:${entry.score}`).join(", ");
-        console.log(`[simulation] Final scores: ${summary}`);
-    }
-
-    console.log("[simulation] Completed successfully.");
-    players.forEach((player) => player.socket.disconnect());
 }
 
 async function waitFor(predicate, timeoutMs, timeoutMessage) {
