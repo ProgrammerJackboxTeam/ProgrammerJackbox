@@ -559,9 +559,12 @@ socket.on("gamemode-selected", (gameMode) => {
     const codeTyperLobbyControls = document.getElementById("codeTyperLobbyControls");
 
     if (gameMode === "bugFixerGame") {
-        bugFixerArea.classList.remove("hidden");
+        // Match CodeTyper behavior: selecting a mode should not open gameplay yet.
+        bugFixerArea.classList.add("hidden");
         document.getElementById("prophuntArea").classList.add("hidden");
         if (codeTyperLobbyControls) codeTyperLobbyControls.classList.add("hidden");
+        bugFixerState = null;
+        bugFixerSelectedCards = [];
         prophuntState = null;
         renderBugFixerControls();
     } else if (gameMode === "codeTyperMultiplayer") {
@@ -574,11 +577,13 @@ socket.on("gamemode-selected", (gameMode) => {
         bugFixerSelectedCards = [];
         prophuntState = null;
     } else if (gameMode === "programmerProphunt") {
-        document.getElementById("prophuntArea").classList.remove("hidden");
+        // Keep panel hidden until `prophunt-state` arrives after actual start.
+        document.getElementById("prophuntArea").classList.add("hidden");
         bugFixerArea.classList.add("hidden");
         if (codeTyperLobbyControls) codeTyperLobbyControls.classList.add("hidden");
         bugFixerState = null;
         bugFixerSelectedCards = [];
+        prophuntState = null;
         renderProphuntControls();
     } else {
         bugFixerArea.classList.add("hidden");
