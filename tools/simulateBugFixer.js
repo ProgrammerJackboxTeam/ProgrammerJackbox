@@ -1,7 +1,5 @@
 const { io } = require("socket.io-client");
-
-const SERVER_URL = process.env.SIM_SERVER_URL || process.env.SERVER_URL || "http://localhost:3000";
-const SOCKET_PATH = process.env.SIM_SOCKET_PATH || process.env.SOCKET_PATH || "/socket.io";
+const { SERVER_URL, SOCKET_PATH, getSocketOptions } = require("./simConfig");
 const PLAYER_NAMES = ["SimA", "SimB", "SimC", "SimD"];
 const GAME_TO_WIN = 1;
 
@@ -13,13 +11,7 @@ async function main() {
     console.log(`[simulation] target=${SERVER_URL}, path=${SOCKET_PATH}`);
     const players = PLAYER_NAMES.map((name) => ({
         name,
-        socket: io(SERVER_URL, {
-            path: SOCKET_PATH,
-            transports: ["websocket", "polling"],
-            forceNew: true,
-            reconnection: false,
-            timeout: 10000,
-        }),
+        socket: io(SERVER_URL, getSocketOptions()),
         roomCode: "",
         currentState: null,
         joined: false,

@@ -21,6 +21,21 @@ app.use("/flexboxSpider", express.static("gameModes/flexboxSpider"));
 app.use("/escapeTheLoop", express.static("gameModes/escapeTheLoop"));
 app.use("/logicCAH", express.static("gameModes/LogicCAH"));
 
+app.get("/healthz", (_req, res) => {
+    const roomCodes = Object.keys(rooms || {});
+    const playerCount = roomCodes.reduce((count, code) => {
+        const room = rooms[code];
+        return count + ((room && Array.isArray(room.players)) ? room.players.length : 0);
+    }, 0);
+
+    res.status(200).json({
+        ok: true,
+        timestamp: Date.now(),
+        rooms: roomCodes.length,
+        players: playerCount,
+    });
+});
+
 const BUG_FIXER_MIN_PLAYERS = 3;
 const BUG_FIXER_HAND_SIZE = 5;
 const BUG_FIXER_FINALIZE_DELAY_MS = 10000;
