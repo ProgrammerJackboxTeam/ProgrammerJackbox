@@ -921,10 +921,14 @@ function renderProphuntState(state) {
 }
 
 socket.on("prophunt-state", state => {
-    if (selectedGameMode === "programmerProphunt") {
-        document.getElementById("prophuntArea").classList.remove("hidden");
-    }
+    selectedGameMode = "programmerProphunt";
+    document.getElementById("gameHub").classList.add("hidden");
+    document.getElementById("gameHubWaiting").classList.add("hidden");
+    document.getElementById("hostSection").classList.remove("hidden");
+    document.getElementById("prophuntArea").classList.remove("hidden");
+    document.getElementById("bugFixerArea").classList.add("hidden");
     renderProphuntState(state);
+    renderTerminationControls();
 });
 
 socket.on("prophunt-error", message => {
@@ -1047,10 +1051,14 @@ function renderBugFixerState(state) {
 }
 
 socket.on("bugfixer-state", (state) => {
-    if (selectedGameMode === "bugFixerGame") {
-        document.getElementById("bugFixerArea").classList.remove("hidden");
-    }
+    selectedGameMode = "bugFixerGame";
+    document.getElementById("gameHub").classList.add("hidden");
+    document.getElementById("gameHubWaiting").classList.add("hidden");
+    document.getElementById("hostSection").classList.remove("hidden");
+    document.getElementById("bugFixerArea").classList.remove("hidden");
+    document.getElementById("prophuntArea").classList.add("hidden");
     renderBugFixerState(state);
+    renderTerminationControls();
 });
 
 socket.on("bugfixer-error", (message) => {
@@ -1086,6 +1094,11 @@ socket.on("game-terminated", (payload) => {
     if (payload && payload.gameMode) {
         alert(`${payload.gameMode} was terminated by host ${payload.byHost}.`);
     }
+});
+
+socket.on("left-game", () => {
+    // Player has left the game, redirect back to lobby
+    window.location.href = "/";
 });
 
 // ============================================

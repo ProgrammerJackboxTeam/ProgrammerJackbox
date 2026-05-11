@@ -21,6 +21,21 @@ app.use("/flexboxSpider", express.static("gameModes/flexboxSpider"));
 app.use("/escapeTheLoop", express.static("gameModes/escapeTheLoop"));
 app.use("/logicCAH", express.static("gameModes/LogicCAH"));
 
+app.get("/healthz", (_req, res) => {
+    const roomCodes = Object.keys(rooms || {});
+    const playerCount = roomCodes.reduce((count, code) => {
+        const room = rooms[code];
+        return count + ((room && Array.isArray(room.players)) ? room.players.length : 0);
+    }, 0);
+
+    res.status(200).json({
+        ok: true,
+        timestamp: Date.now(),
+        rooms: roomCodes.length,
+        players: playerCount,
+    });
+});
+
 const BUG_FIXER_MIN_PLAYERS = 3;
 const BUG_FIXER_HAND_SIZE = 5;
 const BUG_FIXER_FINALIZE_DELAY_MS = 10000;
@@ -1816,6 +1831,36 @@ io.on("connection", (socket) => {
             gameMode: terminatedGame,
             byHost: getPlayerName(room, socket.id),
         });
+    });
+
+    socket.on("leave-game", ({ roomCode }) => {
+        const room = rooms[roomCode];
+        if (!room || !room.game || !room.gameMode) {
+            return;
+        }
+
+        // Remove player from the game instance
+        if (room.game && typeof room.game.removePlayer === 'function') {
+            room.game.removePlayer(socket.id);
+        }
+
+        // Emit game state update to remaining players
+        if (room.gameMode === "LogicCAH") {
+            io.to(roomCode).emit("game-started", {
+                gameMode: "LogicCAH",
+                gameState: room.gameState,
+                status: room.game.getGameStatus(),
+            });
+        } else if (room.gameMode === "ProgrammerProphunt") {
+            io.to(roomCode).emit("game-started", {
+                gameMode: "ProgrammerProphunt",
+                gameState: room.gameState,
+                status: room.game.getGameStatus(),
+            });
+        }
+
+        // Notify the leaving player that they've left the game
+        socket.emit("left-game");
     });
 
     socket.on("start-game", ({ roomCode, gameMode, numRounds, timeLimit, complexity, numPrompts }) => {

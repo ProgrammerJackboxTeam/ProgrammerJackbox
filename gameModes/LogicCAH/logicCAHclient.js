@@ -405,6 +405,10 @@ socket.on("error", (message) => {
 
 });
 
+function leaveGame() {
+    socket.emit("leave-game", { roomCode });
+}
+
 //debugging logs
 
 console.log("CAH client loaded");

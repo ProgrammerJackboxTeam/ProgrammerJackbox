@@ -294,6 +294,37 @@ class LogicCAH {
     }
 
     /**
+     * Remove a player from the game
+     */
+    removePlayer(playerId) {
+        const playerIndex = this.players.findIndex(p => p.id === playerId);
+        if (playerIndex === -1) {
+            return false; // Player not found
+        }
+
+        // Remove player from players array
+        this.players.splice(playerIndex, 1);
+
+        // Remove from scores
+        delete this.scores[playerId];
+
+        // Remove from playerAnswers if they submitted
+        delete this.playerAnswers[playerId];
+
+        // Adjust currentDeciderIndex if necessary
+        if (this.currentDeciderIndex >= this.players.length) {
+            this.currentDeciderIndex = 0;
+        }
+
+        // If the removed player was the current decider, move to next player
+        if (this.players.length > 0 && this.getCurrentDecider().id === playerId) {
+            this.currentDeciderIndex = (this.currentDeciderIndex + 1) % this.players.length;
+        }
+
+        return true;
+    }
+
+    /**
      * Get current game status
      */
     getGameStatus() {
