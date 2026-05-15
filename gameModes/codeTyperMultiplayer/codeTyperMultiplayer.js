@@ -1,7 +1,7 @@
-const socket = typeof io !== 'undefined' ? io() : { emit: () => {}, on: () => {}, id: "test" };
+const socket = typeof io !== "undefined" ? io() : { emit: () => {}, on: () => {}, id: "test" };
 
 let urlParams;
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
     urlParams = new URLSearchParams(window.location.search);
 } else {
     urlParams = new URLSearchParams("?roomCode=test&name=p1&isHost=true");
@@ -10,13 +10,13 @@ const roomCode = urlParams.get("roomCode");
 const playerName = urlParams.get("name");
 const isHost = urlParams.get("isHost") === "true";
 
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
     if (!roomCode || !playerName) {
         window.location.href = "/";
     }
 }
 
-if (typeof document !== 'undefined') {
+if (typeof document !== "undefined") {
     const rmInfo = document.getElementById("room-info");
     if (rmInfo) rmInfo.innerText = `Room: ${roomCode} | Player: ${playerName}`;
 
@@ -80,7 +80,7 @@ let gameActive = false;
 
 let displayEl = null;
 
-if (typeof document !== 'undefined') {
+if (typeof document !== "undefined") {
     displayEl = document.getElementById("code-display");
 }
 
@@ -311,8 +311,8 @@ if (typeof module !== "undefined" && module.exports) {
         resetMatch,
         refreshStats,
         finishGame,
-        setSnippets: (s) => snippets = s,
+        setSnippets: (s) => (snippets = s),
         getCurrentSnippet: () => currentSnippet,
-        setCurrentSnippet: (s) => currentSnippet = s
+        setCurrentSnippet: (s) => (currentSnippet = s),
     };
 }

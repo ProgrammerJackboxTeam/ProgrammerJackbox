@@ -38,7 +38,9 @@ function createClient(name) {
         state.roomCode = String(data.roomCode || "");
         state.selectedGame = String(data.selectedGame || "");
         state.visibility = String(data.visibility || "");
-        console.log(`[room-created] ${name} room=${state.roomCode} visibility=${state.visibility} selectedGame=${state.selectedGame}`);
+        console.log(
+            `[room-created] ${name} room=${state.roomCode} visibility=${state.visibility} selectedGame=${state.selectedGame}`
+        );
     });
 
     socket.on("gamemode-selected", (gameMode) => {

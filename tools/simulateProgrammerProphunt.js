@@ -3,7 +3,7 @@ const { SERVER_URL, SOCKET_PATH, getSocketOptions } = require("./simConfig");
 const PLAYER_NAMES = ["PropSimA", "PropSimB", "PropSimC", "PropSimD"];
 
 function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function waitFor(predicate, timeoutMs, message) {
@@ -25,30 +25,30 @@ function makePlayer(name) {
         roomCode: "",
         latestState: null,
         errors: [],
-        isHost: false
+        isHost: false,
     };
 
     socket.on("connect", () => {
         console.log(`[connect] ${name} (${socket.id})`);
     });
 
-    socket.on("room-created", payload => {
+    socket.on("room-created", (payload) => {
         const roomCode = typeof payload === "string" ? payload : payload.roomCode;
         player.roomCode = roomCode;
         player.isHost = Boolean(payload && payload.isHost);
         console.log(`[room-created] ${name} in ${roomCode}, host=${player.isHost}`);
     });
 
-    socket.on("prophunt-state", state => {
+    socket.on("prophunt-state", (state) => {
         player.latestState = state;
     });
 
-    socket.on("prophunt-error", message => {
+    socket.on("prophunt-error", (message) => {
         player.errors.push(String(message || ""));
         console.log(`[prophunt-error] ${name}: ${message}`);
     });
 
-    socket.on("join-error", message => {
+    socket.on("join-error", (message) => {
         player.errors.push(String(message || ""));
         console.log(`[join-error] ${name}: ${message}`);
     });
@@ -63,7 +63,11 @@ function stateOf(player) {
 async function expectErrorAfter(player, fn, contains, timeoutMs = 5000) {
     const before = player.errors.length;
     fn();
-    await waitFor(() => player.errors.length > before, timeoutMs, `${player.name} expected an error containing '${contains}'`);
+    await waitFor(
+        () => player.errors.length > before,
+        timeoutMs,
+        `${player.name} expected an error containing '${contains}'`
+    );
 
     const message = player.errors[player.errors.length - 1] || "";
     if (!message.toLowerCase().includes(contains.toLowerCase())) {
@@ -95,17 +99,17 @@ async function main() {
             roomCode,
             complexity: "easy",
             roundSeconds: 30,
-            rounds: 1
+            rounds: 1,
         });
 
         await waitFor(
-            () => players.every(player => stateOf(player).active && stateOf(player).phase === "hiding"),
+            () => players.every((player) => stateOf(player).active && stateOf(player).phase === "hiding"),
             8000,
             "Did not reach hiding phase"
         );
 
-        const hiders = players.filter(player => stateOf(player).role === "hider");
-        const finders = players.filter(player => stateOf(player).role === "finder");
+        const hiders = players.filter((player) => stateOf(player).role === "hider");
+        const finders = players.filter((player) => stateOf(player).role === "finder");
 
         if (hiders.length !== 2 || finders.length !== 2) {
             throw new Error(`Expected 2 hiders and 2 finders, got hiders=${hiders.length}, finders=${finders.length}`);
@@ -120,7 +124,8 @@ async function main() {
 
         await expectErrorAfter(
             finderA,
-            () => finderA.socket.emit("prophunt-edit-line", { roomCode, lineRef: "B:1", lineText: "const nope = true;" }),
+            () =>
+                finderA.socket.emit("prophunt-edit-line", { roomCode, lineRef: "B:1", lineText: "const nope = true;" }),
             "Only the hiding team can edit"
         );
 
@@ -130,22 +135,23 @@ async function main() {
             "Apply one line edit before confirming"
         );
 
-        const hiderABaseRef = stateOf(hiderA).editableLineOptions.find(opt => opt.ref !== "NEW_LINE").ref;
+        const hiderABaseRef = stateOf(hiderA).editableLineOptions.find((opt) => opt.ref !== "NEW_LINE").ref;
         hiderA.socket.emit("prophunt-edit-line", {
             roomCode,
             lineRef: hiderABaseRef,
-            lineText: "  // hider A touched this line"
+            lineText: "  // hider A touched this line",
         });
 
         await delay(300);
 
         await expectErrorAfter(
             hiderB,
-            () => hiderB.socket.emit("prophunt-edit-line", {
-                roomCode,
-                lineRef: hiderABaseRef,
-                lineText: "  // illegal collision"
-            }),
+            () =>
+                hiderB.socket.emit("prophunt-edit-line", {
+                    roomCode,
+                    lineRef: hiderABaseRef,
+                    lineText: "  // illegal collision",
+                }),
             "already controls that line"
         );
 
@@ -164,7 +170,7 @@ async function main() {
         hiderB.socket.emit("prophunt-edit-line", {
             roomCode,
             lineRef: "NEW_LINE",
-            lineText: "  const hiddenFlag = true;"
+            lineText: "  const hiddenFlag = true;",
         });
 
         await delay(250);
@@ -173,7 +179,7 @@ async function main() {
         hiderB.socket.emit("prophunt-confirm-hider", { roomCode });
 
         await waitFor(
-            () => players.every(player => stateOf(player).active && stateOf(player).phase === "finding"),
+            () => players.every((player) => stateOf(player).active && stateOf(player).phase === "finding"),
             8000,
             "Did not reach finding phase"
         );
@@ -204,10 +210,11 @@ async function main() {
         finderB.socket.emit("prophunt-confirm-finder", { roomCode, lineRef: secondGuess });
 
         await waitFor(
-            () => players.every(player => {
-                const state = stateOf(player);
-                return !state.active && Boolean(state.lastResultMessage);
-            }),
+            () =>
+                players.every((player) => {
+                    const state = stateOf(player);
+                    return !state.active && Boolean(state.lastResultMessage);
+                }),
             10000,
             "Game did not finish after finder confirmations"
         );
@@ -217,11 +224,11 @@ async function main() {
 
         console.log("[simulation] Programmer Prophunt bug-sequence simulation completed successfully.");
     } finally {
-        players.forEach(player => player.socket.disconnect());
+        players.forEach((player) => player.socket.disconnect());
     }
 }
 
-main().catch(err => {
+main().catch((err) => {
     console.error(`[simulation] FAILED: ${err.stack || err.message}`);
     process.exitCode = 1;
 });

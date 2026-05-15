@@ -1,4 +1,4 @@
-let levels = typeof window !== 'undefined' && window.levels ? window.levels : [];
+let levels = typeof window !== "undefined" && window.levels ? window.levels : [];
 let currentLevelIndex = 0;
 
 if (typeof fetch !== "undefined") {
@@ -50,7 +50,7 @@ function loadLevel(index) {
     // Apply the "answer" to the target container/element so the web is placed at the goal
     const expectedProp = camelCase(lvl.property);
     const expectedVal = lvl.answer;
-    
+
     if (lvl.target === "spider") {
         targetWebEl.style[expectedProp] = expectedVal;
     } else {
@@ -58,106 +58,103 @@ function loadLevel(index) {
     }
 
     // Force the inner text and base styles
-    spiderEl.textContent = '🕷️';
-    spiderEl.className = 'spider-item';
+    spiderEl.textContent = "🕷️";
+    spiderEl.className = "spider-item";
     spiderEl.style.fontSize = "40px";
 
-    targetWebEl.textContent = '🕸️';
-    targetWebEl.className = 'target-item';
+    targetWebEl.textContent = "🕸️";
+    targetWebEl.className = "target-item";
     targetWebEl.style.fontSize = "40px";
 
     // Add or remove dummy items for wrap level
-    webContainer.innerHTML = '';
-    targetContainer.innerHTML = '';
-    
+    webContainer.innerHTML = "";
+    targetContainer.innerHTML = "";
+
     // Dynamic item count based on level type
     if (lvl.answer.includes("space-")) {
         webContainer.appendChild(spiderEl);
         targetContainer.appendChild(targetWebEl);
         // Space-between / space-around needs multiple items to be visible
-        for(let i=0; i<2; i++) {
+        for (let i = 0; i < 2; i++) {
             let dSpider = document.createElement("div");
-            dSpider.textContent = '🕷️';
-            dSpider.className = 'spider-item';
+            dSpider.textContent = "🕷️";
+            dSpider.className = "spider-item";
             dSpider.style.fontSize = "40px";
             webContainer.appendChild(dSpider);
-            
+
             let dWeb = document.createElement("div");
-            dWeb.textContent = '🕸️';
-            dWeb.className = 'target-item';
+            dWeb.textContent = "🕸️";
+            dWeb.className = "target-item";
             dWeb.style.fontSize = "40px";
             targetContainer.appendChild(dWeb);
         }
-    } 
-    else if (lvl.answer === "wrap") {
+    } else if (lvl.answer === "wrap") {
         webContainer.appendChild(spiderEl);
         targetContainer.appendChild(targetWebEl);
-        webContainer.style.width = "160px";     // Force a small container
-        targetContainer.style.width = "160px";  
-        spiderEl.style.minWidth = "100px";       
+        webContainer.style.width = "160px"; // Force a small container
+        targetContainer.style.width = "160px";
+        spiderEl.style.minWidth = "100px";
         targetWebEl.style.minWidth = "100px";
-        
+
         // Add additional spiders/webs to force wrap visually
-        for(let i=0; i<2; i++) {
+        for (let i = 0; i < 2; i++) {
             let dSpider = document.createElement("div");
-            dSpider.textContent = '🕷️';
-            dSpider.className = 'spider-item';
+            dSpider.textContent = "🕷️";
+            dSpider.className = "spider-item";
             dSpider.style.fontSize = "40px";
             dSpider.style.minWidth = "100px";
             webContainer.appendChild(dSpider);
-            
+
             let dWeb = document.createElement("div");
-            dWeb.textContent = '🕸️';
-            dWeb.className = 'target-item';
+            dWeb.textContent = "🕸️";
+            dWeb.className = "target-item";
             dWeb.style.fontSize = "40px";
             dWeb.style.minWidth = "100px";
             targetContainer.appendChild(dWeb);
         }
-    }
-    else if (lvl.property === "order" || lvl.property === "align-self") {
+    } else if (lvl.property === "order" || lvl.property === "align-self") {
         // Add 2 decoy items first
-        for(let i=0; i<2; i++) {
+        for (let i = 0; i < 2; i++) {
             let fly1 = document.createElement("div");
-            fly1.textContent = '🕷️';
-            fly1.className = 'spider-item';
+            fly1.textContent = "🕷️";
+            fly1.className = "spider-item";
             fly1.style.fontSize = "40px";
             fly1.style.opacity = "0.5";
             webContainer.appendChild(fly1);
-            
+
             let webFly1 = document.createElement("div");
-            webFly1.textContent = '🕸️';
-            webFly1.className = 'target-item'; 
+            webFly1.textContent = "🕸️";
+            webFly1.className = "target-item";
             webFly1.style.fontSize = "40px";
             webFly1.style.opacity = "0.5";
             targetContainer.appendChild(webFly1);
         }
-        
+
         // Then the main spider/target
         spiderEl.style.opacity = "1";
         targetWebEl.style.opacity = "1";
         webContainer.appendChild(spiderEl);
         targetContainer.appendChild(targetWebEl);
-        
+
         // Let's add 2 more decoy items
-        for(let i=0; i<2; i++) {
+        for (let i = 0; i < 2; i++) {
             let fly2 = document.createElement("div");
-            fly2.textContent = '🕷️';
-            fly2.className = 'spider-item';
+            fly2.textContent = "🕷️";
+            fly2.className = "spider-item";
             fly2.style.fontSize = "40px";
             fly2.style.opacity = "0.5";
             webContainer.appendChild(fly2);
-            
+
             let webFly2 = document.createElement("div");
-            webFly2.textContent = '🕸️';
-            webFly2.className = 'target-item';
+            webFly2.textContent = "🕸️";
+            webFly2.className = "target-item";
             webFly2.style.fontSize = "40px";
             webFly2.style.opacity = "0.5";
             targetContainer.appendChild(webFly2);
         }
-        
+
         // Reset properties on decoys so they don't move with the spider when applyCSS is called
-    } 
-    else {
+    } else {
         // Default single item layout
         spiderEl.style.opacity = "1";
         targetWebEl.style.opacity = "1";
@@ -265,7 +262,7 @@ function camelCase(str) {
     return str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
-if (typeof module !== 'undefined' && module.exports) {
+if (typeof module !== "undefined" && module.exports) {
     window.applyCSS = applyCSS;
     window.nextLevel = nextLevel;
     window.restartGame = restartGame;

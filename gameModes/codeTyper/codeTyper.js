@@ -7,7 +7,8 @@ if (typeof fetch !== "undefined" && typeof window !== "undefined") {
         .then((data) => {
             snippets = data;
             newGame();
-        }).catch(err => console.error("fetch err", err));
+        })
+        .catch((err) => console.error("fetch err", err));
 }
 
 let startTime = null;
@@ -27,10 +28,10 @@ function initUI() {
     displayEl = document.getElementById("code-display");
 }
 
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
     document.addEventListener("DOMContentLoaded", initUI);
     // If DOM is already loaded
-    if (document.readyState !== 'loading') initUI();
+    if (document.readyState !== "loading") initUI();
 }
 
 function newGame() {
@@ -437,11 +438,11 @@ if (typeof module !== "undefined" && module.exports) {
         charToKey,
         updateNextKey,
         initUI,
-        setSnippets: (s) => snippets = s,
+        setSnippets: (s) => (snippets = s),
         getTyped: () => typed,
-        setTyped: (t) => typed = t,
+        setTyped: (t) => (typed = t),
         getCurrentSnippet: () => currentSnippet,
-        setCurrentSnippet: (s) => currentSnippet = s,
-        setGameActive: (a) => gameActive = a,
+        setCurrentSnippet: (s) => (currentSnippet = s),
+        setGameActive: (a) => (gameActive = a),
     };
 }

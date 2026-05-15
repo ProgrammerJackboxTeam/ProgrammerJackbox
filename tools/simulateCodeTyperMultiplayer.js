@@ -124,7 +124,12 @@ async function main() {
             () => {
                 const hostSnippet = host.latestSnippet;
                 const guestSnippet = guest.latestSnippet;
-                return hostSnippet && guestSnippet && hostSnippet.code === snippet.code && guestSnippet.code === snippet.code;
+                return (
+                    hostSnippet &&
+                    guestSnippet &&
+                    hostSnippet.code === snippet.code &&
+                    guestSnippet.code === snippet.code
+                );
             },
             8000,
             "codetyper-set-snippet was not broadcast"

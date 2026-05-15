@@ -45,16 +45,16 @@ This project can be deployed as a **Web Service** on [Render](https://render.com
 
 1. Connect your GitHub repository to Render.
 2. Create a new **Web Service** with the following settings:
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm start`
+    - **Build Command:** `npm install`
+    - **Start Command:** `npm start`
 3. Render automatically sets the `PORT` environment variable — no manual configuration needed.
 4. Once deployed, Render provides a public `.onrender.com` URL for access.
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Port the server listens on | `3000` |
+| Variable | Description                | Default |
+| -------- | -------------------------- | ------- |
+| `PORT`   | Port the server listens on | `3000`  |
 
 No `.env` file is required for local development. If you need to override the port, set the variable before starting the server:
 

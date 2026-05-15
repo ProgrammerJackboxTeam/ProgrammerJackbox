@@ -106,7 +106,9 @@ async function main() {
         if (failures.length) {
             console.log("Failure summary:");
             failures.forEach((failure) => {
-                console.log(`- ${failure.transportMode} | Round ${failure.round} | ${failure.test} | ${failure.reason}`);
+                console.log(
+                    `- ${failure.transportMode} | Round ${failure.round} | ${failure.test} | ${failure.reason}`
+                );
             });
             console.log("");
         }
@@ -132,7 +134,9 @@ async function main() {
 }
 
 function normalizeMode(value) {
-    const lowered = String(value || DEFAULT_MODE).trim().toLowerCase();
+    const lowered = String(value || DEFAULT_MODE)
+        .trim()
+        .toLowerCase();
     if (lowered === "remote" || lowered === "local" || lowered === "auto") {
         return lowered;
     }

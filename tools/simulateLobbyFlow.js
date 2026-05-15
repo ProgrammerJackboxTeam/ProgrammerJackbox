@@ -64,7 +64,11 @@ function createClient(name) {
 async function expectJoinError(client, action, contains, timeoutMs = 6000) {
     const before = client.errors.length;
     action();
-    await waitFor(() => client.errors.length > before, timeoutMs, `${client.name} expected join-error containing '${contains}'`);
+    await waitFor(
+        () => client.errors.length > before,
+        timeoutMs,
+        `${client.name} expected join-error containing '${contains}'`
+    );
     const actual = client.errors[client.errors.length - 1] || "";
     if (!actual.toLowerCase().includes(contains.toLowerCase())) {
         throw new Error(`Expected join-error containing '${contains}', got '${actual}'`);
@@ -98,11 +102,12 @@ async function main() {
         });
 
         await waitFor(
-            () => all.every((client) => {
-                const payload = client.latestPlayersPayload;
-                const players = payload && payload.players ? payload.players : [];
-                return Array.isArray(players) && players.length === 4;
-            }),
+            () =>
+                all.every((client) => {
+                    const payload = client.latestPlayersPayload;
+                    const players = payload && payload.players ? payload.players : [];
+                    return Array.isArray(players) && players.length === 4;
+                }),
             10000,
             "Not all clients observed 4 players in lobby"
         );
@@ -131,7 +136,8 @@ async function main() {
 
         host.socket.emit("terminate-game", { roomCode });
         await waitFor(
-            () => all.every((client) => client.latestTermination && client.latestTermination.gameMode === "bugFixerGame"),
+            () =>
+                all.every((client) => client.latestTermination && client.latestTermination.gameMode === "bugFixerGame"),
             8000,
             "Not all clients received game-terminated event"
         );

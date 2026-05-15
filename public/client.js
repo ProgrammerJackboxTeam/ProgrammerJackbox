@@ -643,7 +643,12 @@ function startBugFixerGame() {
         return;
     }
 
-    console.log("[client] Emitting start-bugfixer event", { roomCode: currentRoomCode, pointsToWin, submissionSeconds, deciderSeconds });
+    console.log("[client] Emitting start-bugfixer event", {
+        roomCode: currentRoomCode,
+        pointsToWin,
+        submissionSeconds,
+        deciderSeconds,
+    });
     socket.emit("start-bugfixer", {
         roomCode: currentRoomCode,
         pointsToWin,
@@ -710,12 +715,17 @@ function startProphuntGame() {
         return;
     }
 
-    console.log("[client] Emitting start-prophunt event", { roomCode: currentRoomCode, complexity, roundSeconds, rounds });
+    console.log("[client] Emitting start-prophunt event", {
+        roomCode: currentRoomCode,
+        complexity,
+        roundSeconds,
+        rounds,
+    });
     socket.emit("start-prophunt", {
         roomCode: currentRoomCode,
         complexity,
         roundSeconds,
-        rounds
+        rounds,
     });
     console.log("[client] Emitted start-prophunt");
 }
@@ -730,7 +740,7 @@ function applyProphuntEdit() {
     socket.emit("prophunt-edit-line", {
         roomCode: currentRoomCode,
         lineRef,
-        lineText
+        lineText,
     });
 }
 
@@ -750,7 +760,7 @@ function confirmProphuntFinderGuess() {
     const lineRef = document.getElementById("prophuntFinderLineSelect").value;
     socket.emit("prophunt-confirm-finder", {
         roomCode: currentRoomCode,
-        lineRef
+        lineRef,
     });
 }
 
@@ -843,8 +853,14 @@ function renderProphuntControls() {
     }
 
     startButton.classList.toggle("hidden", !(isHost && prophuntState.canStart));
-    hiderControls.classList.toggle("hidden", !(prophuntState.active && prophuntState.role === "hider" && prophuntState.phase === "hiding"));
-    finderControls.classList.toggle("hidden", !(prophuntState.active && prophuntState.role === "finder" && prophuntState.phase === "finding"));
+    hiderControls.classList.toggle(
+        "hidden",
+        !(prophuntState.active && prophuntState.role === "hider" && prophuntState.phase === "hiding")
+    );
+    finderControls.classList.toggle(
+        "hidden",
+        !(prophuntState.active && prophuntState.role === "finder" && prophuntState.phase === "finding")
+    );
 }
 
 function renderProphuntState(state) {
@@ -885,7 +901,7 @@ function renderProphuntState(state) {
     }
 
     if (Array.isArray(state.visibleLines) && state.visibleLines.length > 0) {
-        codeBlock.innerText = state.visibleLines.map(line => `${line.number}. ${line.text}`).join("\n");
+        codeBlock.innerText = state.visibleLines.map((line) => `${line.number}. ${line.text}`).join("\n");
     } else {
         codeBlock.innerText = "Code is hidden for this phase.";
     }
@@ -896,7 +912,7 @@ function renderProphuntState(state) {
 
     lineSelect.innerHTML = "";
     if (Array.isArray(state.editableLineOptions)) {
-        state.editableLineOptions.forEach(option => {
+        state.editableLineOptions.forEach((option) => {
             const el = document.createElement("option");
             el.value = option.ref;
             el.textContent = option.label;
@@ -906,7 +922,7 @@ function renderProphuntState(state) {
 
     finderLineSelect.innerHTML = "";
     if (Array.isArray(state.finderLineOptions)) {
-        state.finderLineOptions.forEach(option => {
+        state.finderLineOptions.forEach((option) => {
             const el = document.createElement("option");
             el.value = option.ref;
             el.textContent = option.label;
@@ -918,7 +934,7 @@ function renderProphuntState(state) {
 
     scoreboard.innerHTML = "";
     if (state.scores) {
-        ["A", "B"].forEach(team => {
+        ["A", "B"].forEach((team) => {
             const li = document.createElement("li");
             li.innerText = `Team ${team}: ${state.scores[team] || 0}`;
             scoreboard.appendChild(li);
@@ -929,7 +945,7 @@ function renderProphuntState(state) {
     renderProphuntControls();
 }
 
-socket.on("prophunt-state", state => {
+socket.on("prophunt-state", (state) => {
     console.log("[client] Received prophunt-state event", state);
     selectedGameMode = "programmerProphunt";
     document.getElementById("gameHub").classList.add("hidden");
@@ -942,7 +958,7 @@ socket.on("prophunt-state", state => {
     renderTerminationControls();
 });
 
-socket.on("prophunt-error", message => {
+socket.on("prophunt-error", (message) => {
     alert(message);
 });
 

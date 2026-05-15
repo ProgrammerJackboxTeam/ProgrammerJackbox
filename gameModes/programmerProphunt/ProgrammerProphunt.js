@@ -281,7 +281,7 @@ class ProgrammerProphunt {
      * Remove a player from the game
      */
     removePlayer(playerId) {
-        const playerIndex = this.players.findIndex(p => p.id === playerId);
+        const playerIndex = this.players.findIndex((p) => p.id === playerId);
         if (playerIndex === -1) {
             return false; // Player not found
         }
@@ -290,8 +290,8 @@ class ProgrammerProphunt {
         this.players.splice(playerIndex, 1);
 
         // Remove from teams
-        this.team1 = this.team1.filter(p => p.id !== playerId);
-        this.team2 = this.team2.filter(p => p.id !== playerId);
+        this.team1 = this.team1.filter((p) => p.id !== playerId);
+        this.team2 = this.team2.filter((p) => p.id !== playerId);
 
         // Remove from scores
         delete this.scores[playerId];

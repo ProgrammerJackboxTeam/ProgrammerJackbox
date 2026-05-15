@@ -2,7 +2,9 @@ const SERVER_URL = process.env.SIM_SERVER_URL || process.env.SERVER_URL || "http
 const SOCKET_PATH = process.env.SIM_SOCKET_PATH || process.env.SOCKET_PATH || "/socket.io";
 
 function normalizeTransportMode(value) {
-    const mode = String(value || "mixed").trim().toLowerCase();
+    const mode = String(value || "mixed")
+        .trim()
+        .toLowerCase();
     if (mode === "websocket" || mode === "polling" || mode === "mixed") {
         return mode;
     }

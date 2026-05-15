@@ -30,11 +30,9 @@ class LogicCAH {
 
         this.loadPrompts();
         this.currentPrompts = this.drawPrompts(this.numPrompts);
-
     }
 
     loadPrompts() {
-
         const cardsPath = path.join(__dirname, "cards.json");
 
         if (!fs.existsSync(cardsPath)) {
@@ -51,17 +49,14 @@ class LogicCAH {
         if (!Array.isArray(data.black_cards)) {
             throw new Error("Invalid cards.json format: 'black_cards' should be an array");
         }
-    
-        this.promptDeck = data.black_cards
-            .map((prompt) => String(prompt).trim())
-            .filter((prompt) => prompt.length > 0);
+
+        this.promptDeck = data.black_cards.map((prompt) => String(prompt).trim()).filter((prompt) => prompt.length > 0);
 
         if (this.promptDeck.length < this.numPrompts * this.numRounds) {
             throw new Error("Not enough prompts in the deck to support the number of rounds and prompts per round");
         }
 
         this.shuffle(this.promptDeck);
-
     }
 
     //shuffle
@@ -74,38 +69,28 @@ class LogicCAH {
 
     //draw prompt, recycles from the discard pile is neccessary
     drawPrompt() {
-        
         if (this.promptDeck.length === 0) {
-
             if (this.discardedPrompts.length === 0) {
-
                 return "[No more prompts available]";
-
             }
 
             this.promptDeck = [...this.discardedPrompts];
             this.discardedPrompts = [];
             this.shuffle(this.promptDeck);
-
         }
 
         return this.promptDeck.pop();
-
     }
 
     drawPrompts(count) {
-
         const prompts = [];
 
         for (let i = 0; i < count; i++) {
-
             const prompt = this.drawPrompt();
             prompts.push(prompt);
-            
         }
 
         return prompts;
-
     }
 
     /**
@@ -199,7 +184,6 @@ class LogicCAH {
         }
 
         return nonDeciders;
-
     }
 
     /**
@@ -249,14 +233,12 @@ class LogicCAH {
      * Complete the current round and move to next
      */
     completeRound() {
-
         this.discardedPrompts.push(...this.currentPrompts);
         this.currentRound++;
         this.currentDeciderIndex = (this.currentDeciderIndex + 1) % this.players.length;
         this.playerAnswers = {};
         this.selectedPlayerId = null;
         this.roundState = "WAITING_FOR_ANSWERS";
-
 
         if (!this.isGameOver()) {
             this.currentPrompts = this.drawPrompts(this.numPrompts);
@@ -297,7 +279,7 @@ class LogicCAH {
      * Remove a player from the game
      */
     removePlayer(playerId) {
-        const playerIndex = this.players.findIndex(p => p.id === playerId);
+        const playerIndex = this.players.findIndex((p) => p.id === playerId);
         if (playerIndex === -1) {
             return false; // Player not found
         }

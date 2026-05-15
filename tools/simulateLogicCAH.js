@@ -66,12 +66,7 @@ function createClient(name) {
 async function main() {
     console.log(`[simulation] target=${SERVER_URL}, path=${SOCKET_PATH}`);
 
-    const players = [
-        createClient("CAH_A"),
-        createClient("CAH_B"),
-        createClient("CAH_C"),
-        createClient("CAH_D"),
-    ];
+    const players = [createClient("CAH_A"), createClient("CAH_B"), createClient("CAH_C"), createClient("CAH_D")];
 
     try {
         const host = players[0];
@@ -115,7 +110,8 @@ async function main() {
         });
 
         await waitFor(
-            () => players.every((player) => player.latestShowAnswers && Array.isArray(player.latestShowAnswers.answers)),
+            () =>
+                players.every((player) => player.latestShowAnswers && Array.isArray(player.latestShowAnswers.answers)),
             10000,
             "show-answers was not received for all LogicCAH players"
         );

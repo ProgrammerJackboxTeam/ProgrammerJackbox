@@ -131,9 +131,9 @@ button:disabled {
 }
 
 .robot::after {
-    content: '';
-    width: 0; 
-    height: 0; 
+    content: "";
+    width: 0;
+    height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
     border-bottom: 12px solid #1a1a1a;
@@ -157,7 +157,8 @@ button:disabled {
     gap: 20px;
 }
 
-.toolbox, .script-area {
+.toolbox,
+.script-area {
     background: #2a2a2a;
     border: 1px solid #444;
     padding: 15px;
